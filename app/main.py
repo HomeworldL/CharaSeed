@@ -33,9 +33,9 @@ from app.services.catalog import (
     status_label,
     split_tokens,
 )
-from app.services.feed import build_site_feed
+from app.services.feed import build_mixed_feed, build_site_feed
 from app.services.search import search_service, site_profiles
-from app.site_profiles import SITE_ORDER, sites_for_mode
+from app.site_profiles import HOME_SITE_ORDER, SITE_ORDER, sites_for_mode
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -110,8 +110,8 @@ def home_page(request: Request) -> HTMLResponse:
         {
             "request": request,
             "site_profiles": site_profiles,
-            "site_order": SITE_ORDER,
-            "selected_site": SITE_ORDER[0],
+            "site_order": HOME_SITE_ORDER,
+            "selected_site": "all",
         },
     )
 
@@ -119,21 +119,30 @@ def home_page(request: Request) -> HTMLResponse:
 @app.get("/fragments/home-feed", response_class=HTMLResponse)
 async def home_feed_fragment(
     request: Request,
-    site: str = Query(default=SITE_ORDER[0]),
+    site: str = Query(default="all"),
     refresh_token: str | None = Query(default=None),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
-    if site not in SITE_ORDER:
+    if site not in HOME_SITE_ORDER:
         raise HTTPException(status_code=400, detail="Invalid site")
     owner = default_user(session)
-    site_feed = await build_site_feed(
-        session,
-        owner.id,
-        site,
-        refresh_token=refresh_token or str(time.time_ns()),
-        limit=12,
-        force_refresh=True,
-    )
+    if site == "all":
+        site_feed = await build_mixed_feed(
+            session,
+            owner.id,
+            refresh_token=refresh_token or str(time.time_ns()),
+            limit=12,
+            force_refresh=True,
+        )
+    else:
+        site_feed = await build_site_feed(
+            session,
+            owner.id,
+            site,
+            refresh_token=refresh_token or str(time.time_ns()),
+            limit=12,
+            force_refresh=True,
+        )
     return templates.TemplateResponse(
         "partials/home_feed.html",
         {
@@ -371,6 +380,8 @@ def library_page(
         "total": len(items),
         "images": len([item for item in items if item.item_type == "image"]),
         "figures": len([item for item in items if item.item_type == "figure"]),
+        "models": len([item for item in items if item.item_type == "model"]),
+        "anime": len([item for item in items if item.item_type == "anime"]),
         "entries": len([item for item in items if item.item_type == "entry"]),
     }
     return templates.TemplateResponse(

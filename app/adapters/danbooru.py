@@ -22,6 +22,10 @@ class DanbooruAdapter(SearchAdapter):
                 f"{self.base_url}/posts.json",
                 params={"tags": query, "limit": limit},
             )
+            if response.status_code == 422:
+                raise RuntimeError("Danbooru 查询语法不兼容，已跳过该推荐词")
+            if response.status_code == 403 and "Just a moment" in response.text[:256]:
+                raise RuntimeError("Danbooru 当前需要浏览器验证，后端公开搜索暂不可用")
             response.raise_for_status()
             posts = response.json()
 

@@ -1,12 +1,21 @@
+{% set results = site_feed.results %}
 {% if site_feed.errors %}
   <div class="error-stack">
-    {% for error in site_feed.errors %}
-      <div class="error-pill">{{ site_profiles[site].label }} 暂时不可用：{{ error }}</div>
-    {% endfor %}
+    {% if site == "all" %}
+      {% for error_site, site_errors in site_feed.errors.items() %}
+        {% for error in site_errors %}
+          <div class="error-pill">{{ site_profiles[error_site].label }} 暂时不可用：{{ error }}</div>
+        {% endfor %}
+      {% endfor %}
+    {% else %}
+      {% for error in site_feed.errors %}
+        <div class="error-pill">{{ site_profiles[site].label }} 暂时不可用：{{ error }}</div>
+      {% endfor %}
+    {% endif %}
   </div>
 {% endif %}
 
-{% if site_feed.results %}
+{% if results %}
   <div class="result-grid result-grid-home">
     {% include "partials/result_cards.html" %}
   </div>

@@ -1,4 +1,16 @@
-SITE_ORDER = ["danbooru", "safebooru", "zerochan", "hpoi"]
+SITE_ORDER = [
+    "danbooru",
+    "safebooru",
+    "zerochan",
+    "hpoi",
+    "yandere",
+    "konachan",
+    "myfigurecollection",
+    "anilist",
+    "sketchfab",
+]
+
+HOME_SITE_ORDER = ["all", *SITE_ORDER]
 
 
 SITE_PROFILES = {
@@ -44,6 +56,51 @@ SITE_PROFILES = {
         "best_for": "手办候选、厂商条目、再版关注。",
         "examples": ["初音未来", "良笑", "F:NEX", "尼尔 2B 手办"],
         "hint_tags": ["角色", "商品名", "厂商", "系列"],
+        "supports_mixed_home": True,
+    },
+    "yandere": {
+        "label": "Yande.re",
+        "title": "高质量二次元图站",
+        "description": "适合按角色、作品和标签快速找高分辨率插画。",
+        "best_for": "高清图、壁纸图、tag 搜索。",
+        "examples": ["asuna", "hatsune_miku", "blue_archive", "genshin_impact"],
+        "hint_tags": ["角色", "作品", "tag"],
+        "supports_mixed_home": True,
+    },
+    "konachan": {
+        "label": "Konachan",
+        "title": "壁纸导向图站",
+        "description": "适合搜壁纸式图像和经典 tag 图站内容。",
+        "best_for": "壁纸图、角色图、tag 搜索。",
+        "examples": ["asuna", "hatsune_miku", "azur_lane", "landscape"],
+        "hint_tags": ["角色", "作品", "tag"],
+        "supports_mixed_home": True,
+    },
+    "myfigurecollection": {
+        "label": "MyFigureCollection",
+        "title": "手办资料与收藏社区",
+        "description": "适合搜角色手办、PVC、比例款和品牌条目。",
+        "best_for": "手办条目、系列手办、角色手办。",
+        "examples": ["asuna figure", "miku scale figure", "good smile asuna", "alter saber"],
+        "hint_tags": ["角色", "商品名", "厂商", "系列"],
+        "supports_mixed_home": True,
+    },
+    "anilist": {
+        "label": "AniList",
+        "title": "公开 API 动画数据库",
+        "description": "适合快速搜动画作品并拿到封面、类型和状态。",
+        "best_for": "动画条目、番剧搜索、作品发现。",
+        "examples": ["Sword Art Online", "Asuna", "Blue Archive", "Frieren"],
+        "hint_tags": ["动画", "作品", "角色"],
+        "supports_mixed_home": True,
+    },
+    "sketchfab": {
+        "label": "Sketchfab",
+        "title": "公开 3D 模型平台",
+        "description": "适合找 3D 角色模型、资产和可预览模型。",
+        "best_for": "3D 模型、角色资产、展示模型。",
+        "examples": ["anime girl", "miku", "sci-fi character", "mecha"],
+        "hint_tags": ["3D", "角色", "模型"],
         "supports_mixed_home": True,
     },
 }

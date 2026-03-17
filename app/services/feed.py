@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 from collections import defaultdict, deque
 import random
+import re
 import time
 from typing import Any
 
@@ -48,6 +49,37 @@ def _fallback_profile() -> dict[str, list[str]]:
     }
 
 
+def _mixed_home_sites() -> list[str]:
+    return [site for site in SITE_ORDER if SITE_PROFILES.get(site, {}).get("supports_mixed_home")]
+
+
+def _has_cjk(value: str) -> bool:
+    return any("\u4e00" <= char <= "\u9fff" for char in value)
+
+
+def _normalize_booru_query(query: str) -> str | None:
+    cleaned = query.strip().lower()
+    if not cleaned or _has_cjk(cleaned):
+        return None
+    if any(token in cleaned for token in ("figure", "model", "toy", "merch", "goods")):
+        return None
+    tokens = re.findall(r"[a-z0-9_()]+", cleaned)
+    if not tokens or len(tokens) > 4:
+        return None
+    if len(tokens) > 1 and all("_" not in token for token in tokens):
+        return "_".join(tokens)
+    return " ".join(tokens)
+
+
+def _normalize_query_for_site(site: str, query: str) -> str | None:
+    stripped = query.strip()
+    if not stripped:
+        return None
+    if site in {"danbooru", "yandere", "konachan"}:
+        return _normalize_booru_query(stripped)
+    return stripped
+
+
 def _queries_for_site(site: str, profile: dict[str, list[str]], refresh_token: str) -> list[str]:
     rng = _rng_for(site, refresh_token, time.strftime("%Y-%m-%d"))
     weighted = _seed_weights(profile)
@@ -59,11 +91,14 @@ def _queries_for_site(site: str, profile: dict[str, list[str]], refresh_token: s
     seen: set[str] = set()
     candidates = ordered + SITE_PROFILES[site]["examples"]
     for value in candidates:
-        lowered = value.lower()
+        normalized = _normalize_query_for_site(site, value)
+        if not normalized:
+            continue
+        lowered = normalized.lower()
         if lowered in seen:
             continue
         seen.add(lowered)
-        picks.append(value)
+        picks.append(normalized)
         if len(picks) >= 3:
             break
     return picks[:3]
@@ -136,31 +171,30 @@ def _dedupe_results(results: list[SearchResult]) -> list[SearchResult]:
     return unique
 
 
-def build_feed_shell(session: Session, owner_id: int, refresh_token: str | None = None) -> dict[str, Any]:
-    profile = discovery_profile(session, owner_id)
-    if not any(profile.values()):
-        profile = _fallback_profile()
-
-    refresh_token = refresh_token or str(time.time_ns())
-    seeds = _seed_weights(profile)
-    headline = list(seeds)[:3]
-    if not headline:
-        summary = "今天先从你近期可能感兴趣的角色、作品和模型候选开始。"
-    elif len(headline) == 1:
-        summary = f"今天更偏向 {headline[0]} 附近的内容。"
-    elif len(headline) == 2:
-        summary = f"今天更偏向 {headline[0]} 和 {headline[1]} 附近的内容。"
-    else:
-        summary = f"今天更偏向 {headline[0]}、{headline[1]} 和 {headline[2]} 附近的内容。"
-
-    shuffled_sites = SITE_ORDER[:]
-    _rng_for(owner_id, refresh_token).shuffle(shuffled_sites)
-    return {
-        "summary": summary,
-        "signals": list(seeds)[:6],
-        "refresh_token": refresh_token,
-        "site_order": shuffled_sites,
-    }
+def _diversify_ranked_results(results: list[SearchResult], limit: int) -> list[SearchResult]:
+    ordered = sorted(results, key=lambda item: item.meta.get("feed_score", 0), reverse=True)
+    diversified: list[SearchResult] = []
+    seen: set[tuple[str, str]] = set()
+    for site in _mixed_home_sites():
+        top = next((result for result in ordered if result.source_site == site), None)
+        if not top:
+            continue
+        key = (top.source_site, top.external_id)
+        if key in seen:
+            continue
+        diversified.append(top)
+        seen.add(key)
+        if len(diversified) >= limit:
+            return diversified
+    for result in ordered:
+        key = (result.source_site, result.external_id)
+        if key in seen:
+            continue
+        diversified.append(result)
+        seen.add(key)
+        if len(diversified) >= limit:
+            break
+    return diversified
 
 
 async def build_site_feed(
@@ -171,6 +205,7 @@ async def build_site_feed(
     refresh_token: str,
     limit: int = 8,
     force_refresh: bool = False,
+    mark_exposure: bool = True,
 ) -> dict[str, Any]:
     profile = discovery_profile(session, owner_id)
     if not any(profile.values()):
@@ -178,7 +213,11 @@ async def build_site_feed(
 
     queries = _queries_for_site(site, profile, refresh_token)
     if not queries:
-        queries = SITE_PROFILES[site]["examples"][:2]
+        queries = [
+            normalized
+            for normalized in (_normalize_query_for_site(site, example) for example in SITE_PROFILES[site]["examples"])
+            if normalized
+        ][:2]
 
     tasks = [
         search_service.search_site(site, query, limit=max(3, min(limit, 6)), force_refresh=force_refresh)
@@ -190,7 +229,8 @@ async def build_site_feed(
     errors: list[str] = []
     for results, error in responses:
         if error:
-            errors.append(error)
+            if error not in errors:
+                errors.append(error)
             continue
         gathered.extend(results)
 
@@ -201,10 +241,56 @@ async def build_site_feed(
         result.meta["feed_reason"] = feed_reason
 
     ranked = sorted(results, key=lambda item: item.meta.get("feed_score", 0), reverse=True)[:limit]
-    _mark_exposures(owner_id, ranked)
+    if mark_exposure:
+        _mark_exposures(owner_id, ranked)
     return {
         "site": site,
         "queries": queries,
+        "results": ranked,
+        "errors": errors,
+    }
+
+
+async def build_mixed_feed(
+    session: Session,
+    owner_id: int,
+    *,
+    refresh_token: str,
+    limit: int = 12,
+    force_refresh: bool = False,
+) -> dict[str, Any]:
+    active_sites = _mixed_home_sites()
+    tasks = [
+        build_site_feed(
+            session,
+            owner_id,
+            site,
+            refresh_token=f"{refresh_token}:{site}",
+            limit=max(3, min(5, limit)),
+            force_refresh=force_refresh,
+            mark_exposure=False,
+        )
+        for site in active_sites
+    ]
+    responses = await asyncio.gather(*tasks)
+
+    combined: list[SearchResult] = []
+    errors: dict[str, list[str]] = {}
+    for feed in responses:
+        combined.extend(feed["results"])
+        if feed["errors"]:
+            errors[feed["site"]] = feed["errors"]
+
+    unique = [
+        result
+        for result in _dedupe_results(combined)
+        if result.meta.get("site_notice") != "browser-challenge"
+    ]
+    ranked = _diversify_ranked_results(unique, limit)
+    _mark_exposures(owner_id, ranked)
+    return {
+        "site": "all",
+        "queries": [],
         "results": ranked,
         "errors": errors,
     }

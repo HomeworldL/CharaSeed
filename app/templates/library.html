@@ -7,6 +7,8 @@
   <div class="stat-card"><span>总收藏</span><strong>{{ stats.total }}</strong></div>
   <div class="stat-card"><span>图片</span><strong>{{ stats.images }}</strong></div>
   <div class="stat-card"><span>手办</span><strong>{{ stats.figures }}</strong></div>
+  <div class="stat-card"><span>模型</span><strong>{{ stats.models }}</strong></div>
+  <div class="stat-card"><span>动画</span><strong>{{ stats.anime }}</strong></div>
   <div class="stat-card"><span>条目</span><strong>{{ stats.entries }}</strong></div>
 </section>
 
@@ -27,7 +29,7 @@
         <label>类型</label>
         <select name="item_type">
           <option value="">全部</option>
-          {% for option in ["image", "figure", "entry"] %}
+          {% for option in ["image", "figure", "model", "anime", "entry"] %}
             <option value="{{ option }}" {% if filters.get('item_type') == option %}selected{% endif %}>{{ option }}</option>
           {% endfor %}
         </select>
@@ -66,7 +68,7 @@
         <label>来源站点</label>
         <select name="source_site">
           <option value="">全部</option>
-          {% for option in ["danbooru", "safebooru", "zerochan", "hpoi", "manual"] %}
+          {% for option in ["danbooru", "safebooru", "zerochan", "hpoi", "yandere", "konachan", "myfigurecollection", "anilist", "sketchfab", "manual"] %}
             <option value="{{ option }}" {% if filters.get('source_site') == option %}selected{% endif %}>{{ option }}</option>
           {% endfor %}
         </select>

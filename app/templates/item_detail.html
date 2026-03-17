@@ -47,7 +47,7 @@
         <div class="field">
           <label>类型</label>
           <select name="item_type">
-            {% for option in ["image", "figure", "entry"] %}
+            {% for option in ["image", "figure", "model", "anime", "entry"] %}
               <option value="{{ option }}" {% if item.item_type == option %}selected{% endif %}>{{ option }}</option>
             {% endfor %}
           </select>

@@ -33,6 +33,7 @@ ITEM_TYPE_LABELS = {
     "image": "图片",
     "figure": "手办",
     "model": "模型",
+    "anime": "动画",
     "video": "视频",
     "entry": "条目",
 }

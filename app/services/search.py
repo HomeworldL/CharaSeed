@@ -5,9 +5,14 @@ from copy import deepcopy
 import time
 
 from app.config import settings
+from app.adapters.anilist import AniListAdapter
 from app.adapters.danbooru import DanbooruAdapter
 from app.adapters.hpoi import HpoiAdapter
+from app.adapters.konachan import KonachanAdapter
+from app.adapters.myfigurecollection import MyFigureCollectionAdapter
 from app.adapters.safebooru import SafebooruAdapter
+from app.adapters.sketchfab import SketchfabAdapter
+from app.adapters.yandere import YandereAdapter
 from app.adapters.zerochan import ZerochanAdapter
 from app.search_types import SearchResponse, SearchResult
 from app.site_profiles import SITE_PROFILES
@@ -20,6 +25,11 @@ class SearchService:
             "safebooru": SafebooruAdapter(),
             "zerochan": ZerochanAdapter(),
             "hpoi": HpoiAdapter(),
+            "yandere": YandereAdapter(),
+            "konachan": KonachanAdapter(),
+            "myfigurecollection": MyFigureCollectionAdapter(),
+            "anilist": AniListAdapter(),
+            "sketchfab": SketchfabAdapter(),
         }
         self._cache: dict[tuple[str, str, int], tuple[float, list[SearchResult]]] = {}
 
