@@ -14,9 +14,9 @@ class DanbooruAdapter(SearchAdapter):
 
     async def search(self, query: str, limit: int = 12) -> list[SearchResult]:
         async with httpx.AsyncClient(
-            timeout=settings.request_timeout_seconds,
+            timeout=settings.site_request_timeout_seconds,
             headers={"User-Agent": self.user_agent},
-            trust_env=False,
+            trust_env=settings.http_trust_env,
         ) as client:
             response = await client.get(
                 f"{self.base_url}/posts.json",
@@ -36,8 +36,8 @@ class DanbooruAdapter(SearchAdapter):
                     item_type="image",
                     title=title,
                     subtitle=post.get("tag_string_artist") or None,
-                    preview_url=post.get("preview_file_url"),
-                    original_url=post.get("file_url"),
+                    preview_url=post.get("large_file_url") or post.get("file_url") or post.get("preview_file_url"),
+                    original_url=post.get("file_url") or post.get("large_file_url"),
                     source_url=f"{self.base_url}/posts/{post['id']}",
                     tags=(post.get("tag_string", "") or "").split()[:24],
                     meta={

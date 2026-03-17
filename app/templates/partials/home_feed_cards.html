@@ -1,0 +1,79 @@
+{% for result in results %}
+  {% set character_names = result.meta.get("character") or result.meta.get("primary_tag") or "" %}
+  {% set work_names = result.meta.get("copyright") or "" %}
+  {% set artist_names = result.meta.get("artist") or "" %}
+  {% set maker_names = result.meta.get("maker") or "" %}
+  <article class="feed-card {% if loop.index0 == 0 %}feed-card-feature{% endif %}">
+    <div class="result-media {% if loop.index0 == 0 %}wide-media{% endif %}">
+      {% if result.preview_url %}
+        <img src="{{ result.preview_url }}" alt="{{ result.title }}" loading="lazy">
+      {% else %}
+        <div class="placeholder-media">No preview</div>
+      {% endif %}
+      <span class="source-chip">{{ site_profiles[result.source_site].label }}</span>
+    </div>
+    <div class="result-body">
+      <div class="result-copy">
+        <h3>{{ result.title }}</h3>
+        <p class="muted">
+          {{ result.subtitle or item_type_label(result.item_type) }}
+          {% if result.meta.get("feed_score") %}
+            · 匹配度 {{ result.meta.get("feed_score") }}
+          {% endif %}
+        </p>
+      </div>
+      <div class="tag-row">
+        {% for reason in result.meta.get("feed_reason", []) %}
+          <span class="tag tag-warm">{{ reason }}</span>
+        {% endfor %}
+      </div>
+      <div class="tag-row">
+        {% if result.source_site == "hpoi" %}
+          <span class="tag">{{ result.meta.get("maker") or "手办 / 模型" }}</span>
+          <span class="tag">{{ result.meta.get("category") or "Hpoi" }}</span>
+        {% elif result.source_site == "danbooru" %}
+          <span class="tag">{{ result.meta.get("character") or "角色图" }}</span>
+          <span class="tag">{{ result.meta.get("copyright") or "作品" }}</span>
+        {% elif result.source_site == "zerochan" %}
+          <span class="tag">{{ result.meta.get("primary_tag") or "角色图集" }}</span>
+        {% else %}
+          <span class="tag">{{ result.meta.get("dimensions") or "图片" }}</span>
+        {% endif %}
+      </div>
+      <div class="card-actions">
+        <form hx-get="/fragments/item-preview" hx-target="#modal-panel">
+          <input type="hidden" name="source_site" value="{{ result.source_site }}">
+          <input type="hidden" name="external_id" value="{{ result.external_id }}">
+          <input type="hidden" name="item_type" value="{{ result.item_type }}">
+          <input type="hidden" name="title" value="{{ result.title }}">
+          <input type="hidden" name="subtitle" value="{{ result.subtitle or '' }}">
+          <input type="hidden" name="source_url" value="{{ result.source_url }}">
+          <input type="hidden" name="preview_url" value="{{ result.preview_url or '' }}">
+          <input type="hidden" name="original_url" value="{{ result.original_url or '' }}">
+          <input type="hidden" name="tags_text" value="{{ result.tags | join(', ') }}">
+          <input type="hidden" name="character_names" value="{{ character_names }}">
+          <input type="hidden" name="work_names" value="{{ work_names }}">
+          <input type="hidden" name="artist_names" value="{{ artist_names }}">
+          <input type="hidden" name="maker_names" value="{{ maker_names }}">
+          <button type="submit" class="button-secondary">预览</button>
+        </form>
+        <form hx-get="/fragments/collect-form" hx-target="#modal-panel">
+          <input type="hidden" name="source_site" value="{{ result.source_site }}">
+          <input type="hidden" name="external_id" value="{{ result.external_id }}">
+          <input type="hidden" name="item_type" value="{{ result.item_type }}">
+          <input type="hidden" name="title" value="{{ result.title }}">
+          <input type="hidden" name="subtitle" value="{{ result.subtitle or '' }}">
+          <input type="hidden" name="source_url" value="{{ result.source_url }}">
+          <input type="hidden" name="preview_url" value="{{ result.preview_url or '' }}">
+          <input type="hidden" name="original_url" value="{{ result.original_url or '' }}">
+          <input type="hidden" name="tags_text" value="{{ result.tags | join(', ') }}">
+          <input type="hidden" name="character_names" value="{{ character_names }}">
+          <input type="hidden" name="work_names" value="{{ work_names }}">
+          <input type="hidden" name="artist_names" value="{{ artist_names }}">
+          <input type="hidden" name="maker_names" value="{{ maker_names }}">
+          <button type="submit">归档收藏</button>
+        </form>
+      </div>
+    </div>
+  </article>
+{% endfor %}

@@ -17,91 +17,32 @@
     {% endfor %}
   </div>
 
-  <div class="site-stat-row">
-    {% for site in site_order %}
+  <div class="site-pill-cluster">
+    {% for site in feed.site_order %}
       <button
         type="button"
-        class="site-stat-card"
-        hx-get="/fragments/home-site-panel?site={{ site }}"
+        class="site-chip-button"
+        hx-get="/fragments/home-site-panel?site={{ site }}&refresh_token={{ feed.refresh_token }}"
         hx-target="#home-site-panel"
-      >
-        <strong>{{ site_profiles[site].label }}</strong>
-        <span>{{ feed.site_counts.get(site, 0) }} 条候选</span>
-      </button>
+      >{{ site_profiles[site].label }}</button>
     {% endfor %}
   </div>
 
-  {% if feed.mixed_results %}
-    <div class="feed-grid">
-      {% for result in feed.mixed_results %}
-        <article class="feed-card {% if loop.index0 % 5 == 0 %}feed-card-feature{% endif %}">
-          <div class="result-media {% if loop.index0 % 5 == 0 %}wide-media{% endif %}">
-            {% if result.preview_url %}
-              <img src="{{ result.preview_url }}" alt="{{ result.title }}">
-            {% else %}
-              <div class="placeholder-media">No preview</div>
-            {% endif %}
-            <span class="source-chip">{{ site_profiles[result.source_site].label }}</span>
-          </div>
-          <div class="result-body">
-            <h3>{{ result.title }}</h3>
-            <p class="muted">
-              {{ result.subtitle or result.item_type }}
-              {% if result.meta.get("feed_score") %}
-                · 匹配度 {{ result.meta.get("feed_score") }}
-              {% endif %}
-            </p>
-            <div class="tag-row">
-              {% for reason in result.meta.get("feed_reason", []) %}
-                <span class="tag tag-warm">{{ reason }}</span>
-              {% endfor %}
-            </div>
-            <div class="tag-row">
-              {% if result.source_site == "hpoi" %}
-                <span class="tag">{{ result.meta.get("maker") or "手办 / 模型" }}</span>
-                <span class="tag">{{ result.meta.get("category") or "Hpoi" }}</span>
-              {% elif result.source_site == "danbooru" %}
-                <span class="tag">{{ result.meta.get("character") or "角色图" }}</span>
-                <span class="tag">{{ result.meta.get("copyright") or "作品" }}</span>
-              {% elif result.source_site == "zerochan" %}
-                <span class="tag">{{ result.meta.get("primary_tag") or "角色图集" }}</span>
-              {% else %}
-                <span class="tag">{{ result.meta.get("dimensions") or "图片" }}</span>
-              {% endif %}
-            </div>
-            <div class="card-actions">
-              <form hx-get="/fragments/item-preview" hx-target="#modal-panel">
-                <input type="hidden" name="source_site" value="{{ result.source_site }}">
-                <input type="hidden" name="external_id" value="{{ result.external_id }}">
-                <input type="hidden" name="item_type" value="{{ result.item_type }}">
-                <input type="hidden" name="title" value="{{ result.title }}">
-                <input type="hidden" name="subtitle" value="{{ result.subtitle or '' }}">
-                <input type="hidden" name="source_url" value="{{ result.source_url }}">
-                <input type="hidden" name="preview_url" value="{{ result.preview_url or '' }}">
-                <input type="hidden" name="original_url" value="{{ result.original_url or '' }}">
-                <input type="hidden" name="tags_text" value="{{ result.tags | join(', ') }}">
-                <button type="submit" class="button-secondary">预览</button>
-              </form>
-              <form hx-get="/fragments/collect-form" hx-target="#modal-panel">
-                <input type="hidden" name="source_site" value="{{ result.source_site }}">
-                <input type="hidden" name="external_id" value="{{ result.external_id }}">
-                <input type="hidden" name="item_type" value="{{ result.item_type }}">
-                <input type="hidden" name="title" value="{{ result.title }}">
-                <input type="hidden" name="subtitle" value="{{ result.subtitle or '' }}">
-                <input type="hidden" name="source_url" value="{{ result.source_url }}">
-                <input type="hidden" name="preview_url" value="{{ result.preview_url or '' }}">
-                <input type="hidden" name="original_url" value="{{ result.original_url or '' }}">
-                <input type="hidden" name="tags_text" value="{{ result.tags | join(', ') }}">
-                <button type="submit">收藏</button>
-              </form>
-            </div>
-          </div>
-        </article>
-      {% endfor %}
-    </div>
-  {% else %}
-    <div class="empty-state">
-      <p>目前还没有足够的历史信号。先去搜索页搜几次，或者先收藏一些条目，主页会很快长出更像你的候选流。</p>
-    </div>
-  {% endif %}
+  <div id="mixed-feed-empty" class="empty-state">
+    <p>正在按站点分批生成候选，先到的结果会先出现。</p>
+  </div>
+
+  <div id="mixed-feed-grid" class="feed-grid"></div>
+
+  <div class="feed-loaders" aria-hidden="true">
+    {% for site in feed.site_order %}
+      <div
+        class="feed-loader"
+        hx-get="/fragments/home-feed-site-cards?site={{ site }}&refresh_token={{ feed.refresh_token }}"
+        hx-trigger="load"
+        hx-target="#mixed-feed-grid"
+        hx-swap="beforeend"
+      ></div>
+    {% endfor %}
+  </div>
 </section>

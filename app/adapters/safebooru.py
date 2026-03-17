@@ -12,7 +12,10 @@ class SafebooruAdapter(SearchAdapter):
     base_url = "https://safebooru.org"
 
     async def search(self, query: str, limit: int = 12) -> list[SearchResult]:
-        async with httpx.AsyncClient(timeout=settings.request_timeout_seconds, trust_env=False) as client:
+        async with httpx.AsyncClient(
+            timeout=settings.site_request_timeout_seconds,
+            trust_env=settings.http_trust_env,
+        ) as client:
             response = await client.get(
                 f"{self.base_url}/index.php",
                 params={"page": "dapi", "s": "post", "q": "index", "json": 1, "tags": query, "limit": limit},
@@ -29,7 +32,7 @@ class SafebooruAdapter(SearchAdapter):
                     item_type="image",
                     title=f"Safebooru #{post['id']}",
                     subtitle=post.get("rating"),
-                    preview_url=post.get("preview_url"),
+                    preview_url=post.get("sample_url") or post.get("file_url") or post.get("preview_url"),
                     original_url=post.get("file_url") or post.get("sample_url"),
                     source_url=f"{self.base_url}/index.php?page=post&s=view&id={post['id']}",
                     tags=(post.get("tags", "") or "").split()[:24],

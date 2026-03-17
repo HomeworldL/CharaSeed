@@ -6,7 +6,7 @@
       <p class="muted">{{ site_profiles[site].description }}</p>
     </div>
     <button
-      hx-get="/fragments/home-site-panel?site={{ site }}"
+      hx-get="/fragments/home-site-panel?site={{ site }}&refresh_token={{ request.query_params.get('refresh_token', '') }}"
       hx-target="#home-site-panel"
     >刷新 {{ site_profiles[site].label }}</button>
   </div>
@@ -23,10 +23,14 @@
   {% if site_feed.results %}
     <div class="result-grid">
       {% for result in site_feed.results %}
+        {% set character_names = result.meta.get("character") or result.meta.get("primary_tag") or "" %}
+        {% set work_names = result.meta.get("copyright") or "" %}
+        {% set artist_names = result.meta.get("artist") or "" %}
+        {% set maker_names = result.meta.get("maker") or "" %}
         <article class="result-card">
           <div class="result-media">
             {% if result.preview_url %}
-              <img src="{{ result.preview_url }}" alt="{{ result.title }}">
+              <img src="{{ result.preview_url }}" alt="{{ result.title }}" loading="lazy">
             {% else %}
               <div class="placeholder-media">No preview</div>
             {% endif %}
@@ -66,9 +70,28 @@
                 <input type="hidden" name="preview_url" value="{{ result.preview_url or '' }}">
                 <input type="hidden" name="original_url" value="{{ result.original_url or '' }}">
                 <input type="hidden" name="tags_text" value="{{ result.tags | join(', ') }}">
+                <input type="hidden" name="character_names" value="{{ character_names }}">
+                <input type="hidden" name="work_names" value="{{ work_names }}">
+                <input type="hidden" name="artist_names" value="{{ artist_names }}">
+                <input type="hidden" name="maker_names" value="{{ maker_names }}">
                 <button type="submit" class="button-secondary">预览</button>
               </form>
-              <a class="button-secondary" href="{{ result.source_url }}" target="_blank" rel="noreferrer">打开来源</a>
+              <form hx-get="/fragments/collect-form" hx-target="#modal-panel">
+                <input type="hidden" name="source_site" value="{{ result.source_site }}">
+                <input type="hidden" name="external_id" value="{{ result.external_id }}">
+                <input type="hidden" name="item_type" value="{{ result.item_type }}">
+                <input type="hidden" name="title" value="{{ result.title }}">
+                <input type="hidden" name="subtitle" value="{{ result.subtitle or '' }}">
+                <input type="hidden" name="source_url" value="{{ result.source_url }}">
+                <input type="hidden" name="preview_url" value="{{ result.preview_url or '' }}">
+                <input type="hidden" name="original_url" value="{{ result.original_url or '' }}">
+                <input type="hidden" name="tags_text" value="{{ result.tags | join(', ') }}">
+                <input type="hidden" name="character_names" value="{{ character_names }}">
+                <input type="hidden" name="work_names" value="{{ work_names }}">
+                <input type="hidden" name="artist_names" value="{{ artist_names }}">
+                <input type="hidden" name="maker_names" value="{{ maker_names }}">
+                <button type="submit">归档收藏</button>
+              </form>
             </div>
           </div>
         </article>

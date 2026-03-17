@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import time
 
 from fastapi import Depends, FastAPI, Form, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
@@ -13,11 +14,13 @@ from app.db import Base, SessionLocal, engine, get_session
 from app.models import Entity
 from app.services.catalog import (
     create_or_update_item,
+    delete_item,
     default_user,
     get_entity,
     get_item,
     grouped_entities,
     init_database,
+    item_type_label,
     list_items,
     list_tags,
     payload_from_json,
@@ -26,15 +29,20 @@ from app.services.catalog import (
     serialize_entity,
     serialize_item,
     slugify,
+    STATUS_OPTIONS,
+    status_label,
     split_tokens,
 )
-from app.services.feed import build_site_feed, build_today_feed
+from app.services.feed import build_feed_shell, build_site_feed
 from app.services.search import search_service, site_profiles
 from app.site_profiles import SITE_ORDER, sites_for_mode
 
 
 BASE_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+templates.env.globals["status_label"] = status_label
+templates.env.globals["item_type_label"] = item_type_label
+templates.env.globals["status_options"] = STATUS_OPTIONS
 
 app = FastAPI(title=settings.app_name)
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
@@ -52,6 +60,42 @@ bootstrap_storage()
 @app.on_event("startup")
 def on_startup() -> None:
     bootstrap_storage()
+
+
+def _result_payload(
+    *,
+    source_site: str,
+    external_id: str,
+    item_type: str,
+    title: str,
+    source_url: str,
+    preview_url: str | None = None,
+    original_url: str | None = None,
+    subtitle: str | None = None,
+    tags_text: str | None = None,
+    character_names: str | None = None,
+    work_names: str | None = None,
+    original_names: str | None = None,
+    artist_names: str | None = None,
+    maker_names: str | None = None,
+) -> dict[str, str | None]:
+    return {
+        "source_site": source_site,
+        "external_id": external_id,
+        "source_id": external_id,
+        "item_type": item_type,
+        "title": title,
+        "source_url": source_url,
+        "preview_url": preview_url,
+        "original_url": original_url,
+        "subtitle": subtitle,
+        "tags_text": tags_text or "",
+        "character_names": character_names,
+        "work_names": work_names,
+        "original_names": original_names,
+        "artist_names": artist_names,
+        "maker_names": maker_names,
+    }
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -72,16 +116,40 @@ def home_page(request: Request) -> HTMLResponse:
 
 
 @app.get("/fragments/home-feed", response_class=HTMLResponse)
-async def home_feed_fragment(request: Request, session: Session = Depends(get_session)) -> HTMLResponse:
+def home_feed_fragment(
+    request: Request,
+    refresh_token: str | None = Query(default=None),
+    session: Session = Depends(get_session),
+) -> HTMLResponse:
     owner = default_user(session)
-    feed = await build_today_feed(session, owner.id)
+    feed = build_feed_shell(session, owner.id, refresh_token=refresh_token)
     return templates.TemplateResponse(
         "partials/home_feed.html",
         {
             "request": request,
             "feed": feed,
             "site_profiles": site_profiles,
-            "site_order": SITE_ORDER,
+        },
+    )
+
+
+@app.get("/fragments/home-feed-site-cards", response_class=HTMLResponse)
+async def home_feed_site_cards_fragment(
+    request: Request,
+    site: str = Query(...),
+    refresh_token: str = Query(...),
+    session: Session = Depends(get_session),
+) -> HTMLResponse:
+    if site not in SITE_ORDER:
+        raise HTTPException(status_code=404, detail="Site not found")
+    owner = default_user(session)
+    site_feed = await build_site_feed(session, owner.id, site, refresh_token=refresh_token, limit=4)
+    return templates.TemplateResponse(
+        "partials/home_feed_cards.html",
+        {
+            "request": request,
+            "results": site_feed["results"],
+            "site_profiles": site_profiles,
         },
     )
 
@@ -90,12 +158,20 @@ async def home_feed_fragment(request: Request, session: Session = Depends(get_se
 async def home_site_panel_fragment(
     request: Request,
     site: str = Query(...),
+    refresh_token: str | None = Query(default=None),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
     if site not in SITE_ORDER:
         raise HTTPException(status_code=404, detail="Site not found")
     owner = default_user(session)
-    site_feed = await build_site_feed(session, owner.id, site)
+    site_feed = await build_site_feed(
+        session,
+        owner.id,
+        site,
+        refresh_token=refresh_token or str(time.time_ns()),
+        limit=10,
+        force_refresh=True,
+    )
     return templates.TemplateResponse(
         "partials/home_site_panel.html",
         {
@@ -118,7 +194,8 @@ def discover(request: Request) -> HTMLResponse:
             "errors": {},
             "site_profiles": site_profiles,
             "site_order": SITE_ORDER,
-            "selected_site_mode": "all",
+            "selected_site_mode": SITE_ORDER[0],
+            "site_profile": site_profiles[SITE_ORDER[0]],
         },
     )
 
@@ -127,22 +204,24 @@ def discover(request: Request) -> HTMLResponse:
 async def search_results_fragment(
     request: Request,
     q: str = Query(..., min_length=1),
-    site_mode: str = Query(default="all"),
+    site_mode: str = Query(default=SITE_ORDER[0]),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
+    if site_mode not in SITE_ORDER:
+        raise HTTPException(status_code=400, detail="Invalid site")
     owner = default_user(session)
-    active_sites = sites_for_mode(site_mode)
-    search_response = await search_service.search(q, sites=active_sites, limit_per_site=8)
+    results, error = await search_service.search_site(site_mode, q, limit=12)
     record_search_event(session, owner.id, q, site_mode)
     return templates.TemplateResponse(
         "partials/search_results.html",
         {
             "request": request,
-            "results": search_response.results,
-            "errors": search_response.errors,
+            "results": results,
+            "errors": {site_mode: error} if error else {},
             "query": q,
             "site_mode": site_mode,
-            "site_profile": site_profiles[site_mode if site_mode in site_profiles else "all"],
+            "site_profile": site_profiles[site_mode],
+            "site_profiles": site_profiles,
         },
     )
 
@@ -159,22 +238,32 @@ def item_preview_fragment(
     original_url: str | None = None,
     subtitle: str | None = None,
     tags_text: str | None = None,
+    character_names: str | None = None,
+    work_names: str | None = None,
+    original_names: str | None = None,
+    artist_names: str | None = None,
+    maker_names: str | None = None,
 ) -> HTMLResponse:
     return templates.TemplateResponse(
         "partials/item_preview.html",
         {
             "request": request,
-            "result": {
-                "source_site": source_site,
-                "external_id": external_id,
-                "item_type": item_type,
-                "title": title,
-                "source_url": source_url,
-                "preview_url": preview_url,
-                "original_url": original_url,
-                "subtitle": subtitle,
-                "tags_text": tags_text or "",
-            }
+            "result": _result_payload(
+                source_site=source_site,
+                external_id=external_id,
+                item_type=item_type,
+                title=title,
+                source_url=source_url,
+                preview_url=preview_url,
+                original_url=original_url,
+                subtitle=subtitle,
+                tags_text=tags_text,
+                character_names=character_names,
+                work_names=work_names,
+                original_names=original_names,
+                artist_names=artist_names,
+                maker_names=maker_names,
+            ),
         },
     )
 
@@ -191,18 +280,40 @@ def collect_form_fragment(
     original_url: str | None = None,
     subtitle: str | None = None,
     tags_text: str | None = None,
+    character_names: str | None = None,
+    work_names: str | None = None,
+    original_names: str | None = None,
+    artist_names: str | None = None,
+    maker_names: str | None = None,
 ) -> HTMLResponse:
-    payload = {
-        "source_site": source_site,
-        "source_id": external_id,
-        "item_type": item_type,
-        "title": title,
-        "source_url": source_url,
-        "preview_url": preview_url,
-        "original_url": original_url,
-        "subtitle": subtitle,
-        "tags_text": tags_text or "",
-    }
+    payload = _result_payload(
+        source_site=source_site,
+        external_id=external_id,
+        item_type=item_type,
+        title=title,
+        source_url=source_url,
+        preview_url=preview_url,
+        original_url=original_url,
+        subtitle=subtitle,
+        tags_text=tags_text,
+        character_names=character_names,
+        work_names=work_names,
+        original_names=original_names,
+        artist_names=artist_names,
+        maker_names=maker_names,
+    )
+    return templates.TemplateResponse("partials/collect_form.html", {"request": request, "payload": payload})
+
+
+@app.get("/fragments/manual-item-form", response_class=HTMLResponse)
+def manual_item_form_fragment(request: Request) -> HTMLResponse:
+    payload = _result_payload(
+        source_site="manual",
+        external_id="",
+        item_type="image",
+        title="",
+        source_url="",
+    )
     return templates.TemplateResponse("partials/collect_form.html", {"request": request, "payload": payload})
 
 
@@ -218,13 +329,14 @@ def create_item_from_form(
     source_url: str | None = Form(default=None),
     preview_url: str | None = Form(default=None),
     original_url: str | None = Form(default=None),
-    status: str = Form(default="collected"),
+    status: str = Form(default="archived"),
     rating: int | None = Form(default=None),
     tags_text: str | None = Form(default=None),
     character_names: str | None = Form(default=None),
     work_names: str | None = Form(default=None),
     original_names: str | None = Form(default=None),
     artist_names: str | None = Form(default=None),
+    maker_names: str | None = Form(default=None),
     source_payload_json: str | None = Form(default=None),
     session: Session = Depends(get_session),
 ) -> Response:
@@ -247,6 +359,7 @@ def create_item_from_form(
             "work_names": work_names,
             "original_names": original_names,
             "artist_names": artist_names,
+            "maker_names": maker_names,
             "source_payload_json": source_payload_json,
         }
     )
@@ -260,7 +373,7 @@ def create_item_from_form(
 
 @app.get("/items/new", response_class=HTMLResponse)
 def manual_new_page(request: Request) -> HTMLResponse:
-    return templates.TemplateResponse("manual_new.html", {"request": request})
+    return RedirectResponse(url="/library", status_code=302)
 
 
 @app.get("/library", response_class=HTMLResponse)
@@ -332,6 +445,9 @@ def item_detail_page(
             "artist_names": ", ".join(
                 link.entity.name for link in item.item_entities if link.entity.entity_type == "artist"
             ),
+            "maker_names": ", ".join(
+                link.entity.name for link in item.item_entities if link.entity.entity_type == "maker"
+            ),
             "tags_text": ", ".join(link.tag.name for link in item.item_tags),
         },
     )
@@ -349,13 +465,14 @@ def edit_item(
     source_url: str | None = Form(default=None),
     preview_url: str | None = Form(default=None),
     original_url: str | None = Form(default=None),
-    status: str = Form(default="collected"),
+    status: str = Form(default="archived"),
     rating: int | None = Form(default=None),
     tags_text: str | None = Form(default=None),
     character_names: str | None = Form(default=None),
     work_names: str | None = Form(default=None),
     original_names: str | None = Form(default=None),
     artist_names: str | None = Form(default=None),
+    maker_names: str | None = Form(default=None),
     session: Session = Depends(get_session),
 ) -> RedirectResponse:
     owner = default_user(session)
@@ -379,11 +496,21 @@ def edit_item(
         "work_names": work_names,
         "original_names": original_names,
         "artist_names": artist_names,
+        "maker_names": maker_names,
     }
     payload["source_site"] = payload["source_site"] or current.source_site
     payload["source_id"] = payload["source_id"] or current.source_id
     item = create_or_update_item(session, owner.id, payload)
     return RedirectResponse(url=f"/items/{item.id}", status_code=303)
+
+
+@app.post("/items/{item_id}/delete")
+def delete_item_route(item_id: int, session: Session = Depends(get_session)) -> RedirectResponse:
+    owner = default_user(session)
+    deleted = delete_item(session, owner.id, item_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Item not found")
+    return RedirectResponse(url="/library", status_code=303)
 
 
 @app.get("/entities", response_class=HTMLResponse)
@@ -418,7 +545,7 @@ async def api_search(
     owner = default_user(session)
     active_sites = sites or sites_for_mode(site_mode)
     response = await search_service.search(q, sites=active_sites, item_types=item_types, limit_per_site=8)
-    record_search_event(session, owner.id, q, site_mode or "all")
+    record_search_event(session, owner.id, q, site_mode or (active_sites[0] if len(active_sites) == 1 else "all"))
     return JSONResponse(
         {
             "query": q,
@@ -487,8 +614,19 @@ async def api_patch_item(item_id: int, request: Request, session: Session = Depe
     if isinstance(payload.get("entities"), list):
         payload["character_names"] = ", ".join(entity["name"] for entity in payload["entities"] if entity["entity_type"] == "character")
         payload["work_names"] = ", ".join(entity["name"] for entity in payload["entities"] if entity["entity_type"] == "work")
+        payload["artist_names"] = ", ".join(entity["name"] for entity in payload["entities"] if entity["entity_type"] == "artist")
+        payload["maker_names"] = ", ".join(entity["name"] for entity in payload["entities"] if entity["entity_type"] == "maker")
     item = create_or_update_item(session, owner.id, payload)
     return JSONResponse(serialize_item(item))
+
+
+@app.delete("/api/items/{item_id}", response_class=JSONResponse)
+def api_delete_item(item_id: int, session: Session = Depends(get_session)) -> JSONResponse:
+    owner = default_user(session)
+    deleted = delete_item(session, owner.id, item_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Item not found")
+    return JSONResponse({"ok": True})
 
 
 @app.get("/api/entities", response_class=JSONResponse)

@@ -6,7 +6,9 @@
 <section class="detail-layout">
   <article class="panel">
     <div class="detail-media">
-      {% if item.preview_url %}
+      {% if item.original_url and item.item_type == "image" %}
+        <img src="{{ item.original_url }}" alt="{{ item.title }}">
+      {% elif item.preview_url %}
         <img src="{{ item.preview_url }}" alt="{{ item.title }}">
       {% else %}
         <div class="placeholder-media tall">No preview</div>
@@ -25,9 +27,12 @@
   <article class="panel">
     <div class="section-head">
       <div>
-        <p class="eyebrow">{{ item.item_type }}</p>
+        <p class="eyebrow">{{ item_type_label(item.item_type) }}</p>
         <h1>{{ item.title }}</h1>
       </div>
+      <form method="post" action="/items/{{ item.id }}/delete" onsubmit="return confirm('确认删除这个收藏项？');">
+        <button type="submit" class="button-danger">删除收藏</button>
+      </form>
     </div>
     <form method="post" action="/items/{{ item.id }}/edit" class="edit-form">
       <div class="field">
@@ -50,8 +55,8 @@
         <div class="field">
           <label>状态</label>
           <select name="status">
-            {% for option in ["collected", "wishlist", "pending", "archived"] %}
-              <option value="{{ option }}" {% if item.status == option %}selected{% endif %}>{{ option }}</option>
+            {% for value, label in status_options %}
+              <option value="{{ value }}" {% if status_label(item.status) == label %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
           </select>
         </div>
@@ -81,6 +86,10 @@
       <div class="field">
         <label>作者</label>
         <input type="text" name="artist_names" value="{{ artist_names }}">
+      </div>
+      <div class="field">
+        <label>厂商</label>
+        <input type="text" name="maker_names" value="{{ maker_names }}">
       </div>
       <div class="field">
         <label>标签</label>
@@ -131,7 +140,7 @@
           </a>
           <div class="result-body">
             <h3><a href="/items/{{ entry.id }}">{{ entry.title }}</a></h3>
-            <p class="muted">{{ entry.item_type }}</p>
+            <p class="muted">{{ item_type_label(entry.item_type) }}</p>
           </div>
         </article>
       {% endfor %}

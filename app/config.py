@@ -11,6 +11,9 @@ class Settings:
         "CharaSeed MVP - ZerochanDemo",
     )
     request_timeout_seconds: float = float(os.getenv("REQUEST_TIMEOUT_SECONDS", "12"))
+    site_request_timeout_seconds: float = float(os.getenv("SITE_REQUEST_TIMEOUT_SECONDS", "6"))
+    search_cache_ttl_seconds: float = float(os.getenv("SEARCH_CACHE_TTL_SECONDS", "90"))
+    http_trust_env: bool = os.getenv("HTTP_TRUST_ENV", "1") != "0"
 
 
 settings = Settings()

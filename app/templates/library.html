@@ -36,8 +36,8 @@
         <label>状态</label>
         <select name="status">
           <option value="">全部</option>
-          {% for option in ["collected", "wishlist", "pending", "archived"] %}
-            <option value="{{ option }}" {% if filters.get('status') == option %}selected{% endif %}>{{ option }}</option>
+          {% for value, label in status_options %}
+            <option value="{{ value }}" {% if filters.get('status') == value %}selected{% endif %}>{{ label }}</option>
           {% endfor %}
         </select>
       </div>
@@ -96,7 +96,7 @@
         <p class="eyebrow">Collected</p>
         <h2>我的收藏项</h2>
       </div>
-      <a class="button-secondary" href="/items/new">手动补录</a>
+      <button class="button-secondary" type="button" hx-get="/fragments/manual-item-form" hx-target="#modal-panel">手动补录</button>
     </div>
 
     {% if items %}
@@ -113,7 +113,7 @@
             </a>
             <div class="result-body">
               <h3><a href="/items/{{ item.id }}">{{ item.title }}</a></h3>
-              <p class="muted">{{ item.item_type }} · {{ item.status }}{% if item.rating %} · {{ item.rating }}/5{% endif %}</p>
+              <p class="muted">{{ item_type_label(item.item_type) }} · {{ status_label(item.status) }}{% if item.rating %} · {{ item.rating }}/5{% endif %}</p>
               <div class="tag-row">
                 {% for tag_link in item.item_tags[:5] %}
                   <span class="tag">{{ tag_link.tag.name }}</span>
@@ -123,6 +123,12 @@
                 {% for link in item.item_entities[:3] %}
                   <a class="micro-link" href="/entities/{{ link.entity.id }}">{{ link.entity.name }}</a>
                 {% endfor %}
+              </div>
+              <div class="card-actions">
+                <a class="button-secondary" href="/items/{{ item.id }}">编辑</a>
+                <form method="post" action="/items/{{ item.id }}/delete" onsubmit="return confirm('确认删除这个收藏项？');">
+                  <button type="submit" class="button-danger">删除</button>
+                </form>
               </div>
             </div>
           </article>

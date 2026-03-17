@@ -17,10 +17,10 @@ class ZerochanAdapter(SearchAdapter):
     async def search(self, query: str, limit: int = 12) -> list[SearchResult]:
         headers = {"User-Agent": settings.zerochan_user_agent}
         async with httpx.AsyncClient(
-            timeout=settings.request_timeout_seconds,
+            timeout=settings.site_request_timeout_seconds,
             headers=headers,
             follow_redirects=True,
-            trust_env=False,
+            trust_env=settings.http_trust_env,
         ) as client:
             direct_json = await client.get(f"{self.base_url}/{quote_plus(query)}", params={"json": "", "l": limit})
             content_type = direct_json.headers.get("content-type", "")
@@ -50,7 +50,7 @@ class ZerochanAdapter(SearchAdapter):
                     item_type="image",
                     title=tag_name,
                     subtitle=item.get("source"),
-                    preview_url=item.get("thumbnail"),
+                    preview_url=item.get("source") or item.get("thumbnail"),
                     original_url=item.get("source"),
                     source_url=f"{self.base_url}/{item['id']}",
                     tags=item.get("tags", [])[:24],

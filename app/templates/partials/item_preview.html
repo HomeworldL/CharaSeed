@@ -3,9 +3,9 @@
   <div class="modal-grid">
     <div class="preview-pane">
       {% if result.original_url and result.item_type == "image" %}
-        <img src="{{ result.original_url }}" alt="{{ result.title }}">
+        <img src="{{ result.original_url }}" alt="{{ result.title }}" loading="eager">
       {% elif result.preview_url %}
-        <img src="{{ result.preview_url }}" alt="{{ result.title }}">
+        <img src="{{ result.preview_url }}" alt="{{ result.title }}" loading="eager">
       {% else %}
         <div class="placeholder-media tall">No preview</div>
       {% endif %}
@@ -33,10 +33,15 @@
           <input type="hidden" name="preview_url" value="{{ result.preview_url or '' }}">
           <input type="hidden" name="original_url" value="{{ result.original_url or '' }}">
           <input type="hidden" name="tags_text" value="{{ result.tags_text }}">
-          <button type="submit">收藏并整理</button>
+          <input type="hidden" name="character_names" value="{{ result.character_names or '' }}">
+          <input type="hidden" name="work_names" value="{{ result.work_names or '' }}">
+          <input type="hidden" name="original_names" value="{{ result.original_names or '' }}">
+          <input type="hidden" name="artist_names" value="{{ result.artist_names or '' }}">
+          <input type="hidden" name="maker_names" value="{{ result.maker_names or '' }}">
+          <button type="submit">归档收藏</button>
         </form>
       </div>
-      <p class="muted small">第一版不会下载原图。收藏后会保存来源、预览图和整理信息，你可以在详情页继续跳回原站或按需下载。</p>
+      <p class="muted small">图片条目的预览会直接尝试显示原图。第一版不会下载原图，只保存来源与整理信息。</p>
     </div>
   </div>
 </div>

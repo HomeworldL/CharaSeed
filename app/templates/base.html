@@ -13,7 +13,7 @@
 <body>
   <div class="page-shell">
     <header class="site-header">
-      <a class="brand" href="/discover">
+      <a class="brand" href="/home">
         <span class="brand-mark">CS</span>
         <span>
           <strong>CharaSeed</strong>
@@ -25,7 +25,6 @@
         <a href="/discover">发现</a>
         <a href="/library">收藏库</a>
         <a href="/entities">主题</a>
-        <a href="/items/new">新增条目</a>
       </nav>
     </header>
 
@@ -57,6 +56,12 @@
     document.body.addEventListener("htmx:afterSwap", (event) => {
       if (event.detail.target && event.detail.target.id === "modal-panel") {
         openModal();
+      }
+      if (event.detail.target && event.detail.target.id === "mixed-feed-grid") {
+        const empty = document.getElementById("mixed-feed-empty");
+        if (empty && event.detail.target.children.length > 0) {
+          empty.style.display = "none";
+        }
       }
     });
   </script>

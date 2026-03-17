@@ -18,6 +18,23 @@ ITEM_LOAD_OPTIONS = (
     joinedload(Item.item_tags).joinedload(ItemTag.tag),
 )
 
+STATUS_LABELS = {
+    "archived": "已归档",
+    "pending": "待整理",
+    "collected": "已归档",
+    "wishlist": "待整理",
+}
+STATUS_OPTIONS = [("archived", "已归档"), ("pending", "待整理")]
+LEGACY_STATUS_MAP = {
+    "collected": "archived",
+    "wishlist": "pending",
+}
+ITEM_TYPE_LABELS = {
+    "image": "图片",
+    "figure": "手办",
+    "entry": "条目",
+}
+
 
 def init_database(session: Session) -> None:
     default_user = session.scalar(select(User).where(User.username == "local"))
@@ -62,6 +79,29 @@ def split_tokens(value: str | None) -> list[str]:
         return []
     tokens = re.split(r"[,;\n]+", value)
     return [token.strip() for token in tokens if token.strip()]
+
+
+def normalize_status(status: str | None) -> str:
+    if not status:
+        return "archived"
+    return LEGACY_STATUS_MAP.get(status, status)
+
+
+def status_values_for_filter(status: str | None) -> list[str]:
+    normalized = normalize_status(status) if status else None
+    if normalized == "archived":
+        return ["archived", "collected"]
+    if normalized == "pending":
+        return ["pending", "wishlist"]
+    return []
+
+
+def status_label(status: str | None) -> str:
+    return STATUS_LABELS.get(status or "archived", "已归档")
+
+
+def item_type_label(item_type: str | None) -> str:
+    return ITEM_TYPE_LABELS.get(item_type or "entry", item_type or "条目")
 
 
 def dedupe_key_for_payload(payload: dict[str, Any]) -> str | None:
@@ -157,7 +197,7 @@ def create_or_update_item(session: Session, owner_id: int, payload: dict[str, An
     item.source_url = payload.get("source_url")
     item.preview_url = payload.get("preview_url")
     item.original_url = payload.get("original_url")
-    item.status = payload.get("status") or "collected"
+    item.status = normalize_status(payload.get("status"))
     item.rating = int(payload["rating"]) if payload.get("rating") else None
     item.dedupe_key = dedupe_key
     item.source_payload_json = payload.get("source_payload_json")
@@ -177,6 +217,7 @@ def create_or_update_item(session: Session, owner_id: int, payload: dict[str, An
         ("work", "related", payload.get("work_names")),
         ("original", "related", payload.get("original_names")),
         ("artist", "related", payload.get("artist_names")),
+        ("maker", "related", payload.get("maker_names")),
     ):
         for name in split_tokens(raw_names):
             entity = get_or_create_entity(session, owner_id, entity_type, name)
@@ -219,22 +260,22 @@ def list_items(
     if item_type:
         stmt = stmt.where(Item.item_type == item_type)
     if status:
-        stmt = stmt.where(Item.status == status)
+        stmt = stmt.where(Item.status.in_(status_values_for_filter(status)))
     if rating_gte:
         stmt = stmt.where(Item.rating >= rating_gte)
     if source_site:
         stmt = stmt.where(Item.source_site == source_site)
     if tag:
-        stmt = stmt.join(Item.item_tags).join(ItemTag.tag).where(Tag.slug == slugify(tag))
+        stmt = stmt.join(Item.item_tags).join(ItemTag.tag).where(Tag.name.ilike(f"%{tag}%"))
     if character:
         stmt = stmt.join(Item.item_entities).join(ItemEntity.entity).where(
             Entity.entity_type == "character",
-            Entity.slug == slugify(character),
+            Entity.name.ilike(f"%{character}%"),
         )
     if work:
         stmt = stmt.join(Item.item_entities).join(ItemEntity.entity).where(
             Entity.entity_type == "work",
-            Entity.slug == slugify(work),
+            Entity.name.ilike(f"%{work}%"),
         )
 
     stmt = stmt.distinct()
@@ -252,6 +293,15 @@ def list_items(
 def get_item(session: Session, owner_id: int, item_id: int) -> Item | None:
     stmt = select(Item).options(*ITEM_LOAD_OPTIONS).where(Item.owner_id == owner_id, Item.id == item_id)
     return session.scalar(stmt)
+
+
+def delete_item(session: Session, owner_id: int, item_id: int) -> bool:
+    item = session.scalar(select(Item).where(Item.owner_id == owner_id, Item.id == item_id))
+    if item is None:
+        return False
+    session.delete(item)
+    session.commit()
+    return True
 
 
 def grouped_entities(session: Session, owner_id: int) -> dict[str, list[dict[str, Any]]]:
@@ -382,7 +432,7 @@ def serialize_item(item: Item) -> dict[str, Any]:
         "source_url": item.source_url,
         "preview_url": item.preview_url,
         "original_url": item.original_url,
-        "status": item.status,
+        "status": normalize_status(item.status),
         "rating": item.rating,
         "tags": [link.tag.name for link in item.item_tags],
         "entities": [

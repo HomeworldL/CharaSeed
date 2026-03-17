@@ -22,10 +22,9 @@
       <div class="field">
         <label>状态</label>
         <select name="status">
-          <option value="collected">已收藏</option>
-          <option value="wishlist">想买</option>
-          <option value="pending">待整理</option>
-          <option value="archived">已归档</option>
+          {% for value, label in status_options %}
+            <option value="{{ value }}" {% if payload.status == value or (not payload.status and value == "archived") %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
         </select>
       </div>
       <div class="field">
@@ -40,11 +39,21 @@
     </div>
     <div class="field">
       <label>角色</label>
-      <input type="text" name="character_names" placeholder="逗号分隔，例如：Asuna, 初音未来">
+      <input type="text" name="character_names" value="{{ payload.character_names or '' }}" placeholder="逗号分隔，例如：Asuna, 初音未来">
     </div>
     <div class="field">
       <label>作品</label>
-      <input type="text" name="work_names" placeholder="逗号分隔，例如：Sword Art Online">
+      <input type="text" name="work_names" value="{{ payload.work_names or '' }}" placeholder="逗号分隔，例如：Sword Art Online">
+    </div>
+    <div class="field-grid">
+      <div class="field">
+        <label>作者</label>
+        <input type="text" name="artist_names" value="{{ payload.artist_names or '' }}" placeholder="逗号分隔作者 / 画师">
+      </div>
+      <div class="field">
+        <label>厂商</label>
+        <input type="text" name="maker_names" value="{{ payload.maker_names or '' }}" placeholder="逗号分隔厂商">
+      </div>
     </div>
     <div class="field">
       <label>标签</label>

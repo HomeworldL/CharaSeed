@@ -46,6 +46,11 @@ button,
   transition: transform 120ms ease, opacity 120ms ease;
 }
 
+.button-danger {
+  background: #a84330;
+  color: white;
+}
+
 button:hover,
 .button-secondary:hover {
   transform: translateY(-1px);
@@ -247,6 +252,13 @@ h3 {
   gap: 1rem;
 }
 
+.home-toolbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
 .home-hero-copy,
 .home-hero-side,
 .site-helper-card,
@@ -333,6 +345,7 @@ h3 {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1rem;
+  align-items: start;
 }
 
 .feed-card {
@@ -378,6 +391,7 @@ h3 {
 
 .result-card,
 .entity-card {
+  display: grid;
   overflow: hidden;
   border-radius: 24px;
   border: 1px solid var(--line);
@@ -425,8 +439,23 @@ h3 {
 
 .result-body {
   display: grid;
+  grid-template-rows: auto auto auto 1fr auto;
   gap: 0.8rem;
   padding: 1rem;
+}
+
+.result-copy {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.result-copy h3,
+.result-body h3 {
+  margin: 0;
+}
+
+.result-body .card-actions {
+  margin-top: auto;
 }
 
 .tag {
@@ -594,6 +623,10 @@ h3 {
   width: min(1100px, 100%);
 }
 
+.feed-loaders {
+  display: none;
+}
+
 .modal-card {
   position: relative;
   max-height: 88vh;
@@ -643,6 +676,7 @@ h3 {
 
 @media (max-width: 980px) {
   .home-hero,
+  .home-toolbar,
   .hero-card,
   .stats-grid,
   .library-layout,

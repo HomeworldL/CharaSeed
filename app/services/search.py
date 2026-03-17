@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import asyncio
+from copy import deepcopy
+import time
 
+from app.config import settings
 from app.adapters.danbooru import DanbooruAdapter
 from app.adapters.hpoi import HpoiAdapter
 from app.adapters.safebooru import SafebooruAdapter
@@ -18,6 +21,7 @@ class SearchService:
             "zerochan": ZerochanAdapter(),
             "hpoi": HpoiAdapter(),
         }
+        self._cache: dict[tuple[str, str, int], tuple[float, list[SearchResult]]] = {}
 
     async def search(
         self,
@@ -43,9 +47,36 @@ class SearchService:
 
         return SearchResponse(results=results, errors=errors)
 
-    async def _search_site(self, site: str, query: str, limit: int) -> tuple[str, list[SearchResult], str | None]:
+    async def search_site(
+        self,
+        site: str,
+        query: str,
+        *,
+        limit: int = 8,
+        force_refresh: bool = False,
+    ) -> tuple[list[SearchResult], str | None]:
+        _site, results, error = await self._search_site(site, query, limit, force_refresh=force_refresh)
+        return results, error
+
+    async def _search_site(
+        self,
+        site: str,
+        query: str,
+        limit: int,
+        *,
+        force_refresh: bool = False,
+    ) -> tuple[str, list[SearchResult], str | None]:
+        cache_key = (site, query.strip().lower(), limit)
+        if not force_refresh:
+            cached = self._cache.get(cache_key)
+            if cached and (time.monotonic() - cached[0]) <= settings.search_cache_ttl_seconds:
+                return site, deepcopy(cached[1]), None
         try:
-            results = await self.adapters[site].search(query, limit=limit)
+            results = await asyncio.wait_for(
+                self.adapters[site].search(query, limit=limit),
+                timeout=settings.site_request_timeout_seconds + 0.5,
+            )
+            self._cache[cache_key] = (time.monotonic(), deepcopy(results))
             return site, results, None
         except Exception as exc:  # noqa: BLE001
             return site, [], str(exc)

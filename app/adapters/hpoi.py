@@ -16,9 +16,9 @@ class HpoiAdapter(SearchAdapter):
 
     async def search(self, query: str, limit: int = 12) -> list[SearchResult]:
         async with httpx.AsyncClient(
-            timeout=settings.request_timeout_seconds,
+            timeout=settings.site_request_timeout_seconds,
             follow_redirects=True,
-            trust_env=False,
+            trust_env=settings.http_trust_env,
         ) as client:
             response = await client.get(f"{self.base_url}/search", params={"keyword": query})
             response.raise_for_status()
@@ -40,7 +40,7 @@ class HpoiAdapter(SearchAdapter):
                     item_type="figure",
                     title=title_link.get_text(" ", strip=True),
                     subtitle=" / ".join(labels[:3]) if labels else None,
-                    preview_url=image.get("src") if image else None,
+                    preview_url=(image.get("data-src") or image.get("src")) if image else None,
                     original_url=urljoin(self.base_url, href),
                     source_url=urljoin(self.base_url, href),
                     tags=labels[1:8] if len(labels) > 1 else labels[:8],
