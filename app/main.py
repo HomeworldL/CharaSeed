@@ -35,7 +35,7 @@ from app.services.catalog import (
 )
 from app.services.feed import build_mixed_feed, build_site_feed
 from app.services.search import search_service, site_profiles
-from app.site_profiles import HOME_SITE_ORDER, SITE_ORDER, sites_for_mode
+from app.site_profiles import GROUP_ORDER, HOME_SITE_ORDER, SITE_ORDER, SITE_REGISTRY, SOURCE_GROUPS, sites_for_group, sites_for_mode
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -98,6 +98,98 @@ def _result_payload(
     }
 
 
+def _source_group_payload(*, include_all_group: bool = False, include_all_site: bool = False) -> list[dict[str, object]]:
+    payload: list[dict[str, object]] = []
+    for group_id in GROUP_ORDER:
+        if group_id == "all" and not include_all_group:
+            continue
+        payload.append(
+            {
+                "id": group_id,
+                "label": SOURCE_GROUPS[group_id]["label"],
+                "home_label": SOURCE_GROUPS[group_id]["home_label"],
+                "sites": sites_for_group(group_id, include_all=include_all_site and group_id == "all"),
+            }
+        )
+    return payload
+
+
+def _info_sections() -> list[dict[str, object]]:
+    source_sections = [
+        {
+            "title": SOURCE_GROUPS[group_id]["label"],
+            "entries": [
+                {
+                    "label": SITE_REGISTRY[site]["label"],
+                    "description": SITE_REGISTRY[site]["description"],
+                    "links": SITE_REGISTRY[site]["links"],
+                }
+                for site in sites_for_group(group_id)
+            ],
+        }
+        for group_id in GROUP_ORDER
+        if group_id != "all"
+    ]
+    return [
+        {
+            "title": "站内页面",
+            "entries": [
+                {
+                    "label": "主页",
+                    "description": "跨站推荐和站点分类入口。",
+                    "links": [{"label": "打开", "url": "/home"}],
+                },
+                {
+                    "label": "搜索页",
+                    "description": "单站点搜索入口，按类型和站点两层选择。",
+                    "links": [{"label": "打开", "url": "/discover"}],
+                },
+                {
+                    "label": "收藏库",
+                    "description": "查看、筛选和编辑已收藏条目。",
+                    "links": [{"label": "打开", "url": "/library"}],
+                },
+                {
+                    "label": "主题页",
+                    "description": "查看角色、作品和关联实体。",
+                    "links": [{"label": "打开", "url": "/entities"}],
+                },
+            ],
+        },
+        *source_sections,
+        {
+            "title": "API / 开发文档",
+            "entries": [
+                {
+                    "label": "AniList API Docs",
+                    "description": "AniList 官方 GraphQL 文档。",
+                    "links": [{"label": "文档", "url": "https://anilist.gitbook.io/anilist-apiv2-docs"}],
+                },
+                {
+                    "label": "Sketchfab Data API",
+                    "description": "Sketchfab 官方数据接口文档。",
+                    "links": [{"label": "文档", "url": "https://sketchfab.com/developers/data-api/v3"}],
+                },
+                {
+                    "label": "Bangumi 开发者平台",
+                    "description": "Bangumi 的开发者与 API 入口。",
+                    "links": [{"label": "文档", "url": "https://bgm.tv/dev"}],
+                },
+            ],
+        },
+        {
+            "title": "GitHub / 参考仓库",
+            "entries": [
+                {
+                    "label": "CharaSeed",
+                    "description": "当前项目仓库。",
+                    "links": [{"label": "GitHub", "url": "https://github.com/HomeworldL/CharaSeed"}],
+                }
+            ],
+        },
+    ]
+
+
 @app.get("/", response_class=HTMLResponse)
 def root() -> RedirectResponse:
     return RedirectResponse(url="/home", status_code=302)
@@ -112,6 +204,8 @@ def home_page(request: Request) -> HTMLResponse:
             "site_profiles": site_profiles,
             "site_order": HOME_SITE_ORDER,
             "selected_site": "all",
+            "source_groups": _source_group_payload(include_all_group=True, include_all_site=True),
+            "selected_group": "all",
         },
     )
 
@@ -167,6 +261,19 @@ def discover(request: Request) -> HTMLResponse:
             "site_order": SITE_ORDER,
             "selected_site_mode": SITE_ORDER[0],
             "site_profile": site_profiles[SITE_ORDER[0]],
+            "source_groups": _source_group_payload(include_all_group=True),
+            "selected_group": site_profiles[SITE_ORDER[0]]["group"],
+        },
+    )
+
+
+@app.get("/info", response_class=HTMLResponse)
+def info_page(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(
+        "info.html",
+        {
+            "request": request,
+            "sections": _info_sections(),
         },
     )
 

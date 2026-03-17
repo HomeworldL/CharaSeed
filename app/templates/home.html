@@ -3,20 +3,21 @@
 {% block title %}主页 | CharaSeed{% endblock %}
 
 {% block content %}
-<section class="home-toolbar panel">
-  <div class="site-switcher home-site-switcher" id="home-site-switcher">
-    {% for site in site_order %}
+<section class="home-toolbar panel home-toolbar-panel">
+  <div class="group-switcher" id="home-group-switcher">
+    {% for group in source_groups %}
       <button
         type="button"
-        class="site-switch {% if site == selected_site %}is-active{% endif %}"
-        data-site="{{ site }}"
-      >{{ site_profiles[site].label }}</button>
+        class="group-switch {% if group.id == selected_group %}is-active{% endif %}"
+        data-group="{{ group.id }}"
+      >{{ group.home_label }}</button>
     {% endfor %}
   </div>
   <div class="hero-actions">
     <button type="button" id="home-refresh-button">刷新主页候选</button>
     <a class="button-secondary" href="/discover">进入搜索页</a>
   </div>
+  <div class="site-switcher home-site-switcher" id="home-site-switcher"></div>
 </section>
 
 <div id="home-loading" class="loading-note htmx-indicator">正在生成今日候选流...</div>
@@ -32,26 +33,74 @@
 
 <script>
   (() => {
-    const buttons = Array.from(document.querySelectorAll("#home-site-switcher [data-site]"));
+    const profiles = {{ site_profiles | tojson }};
+    const groups = {{ source_groups | tojson }};
+    const groupButtons = Array.from(document.querySelectorAll("#home-group-switcher [data-group]"));
+    const siteSwitcher = document.getElementById("home-site-switcher");
     const feed = document.getElementById("home-feed");
     const refreshButton = document.getElementById("home-refresh-button");
     const loading = document.getElementById("home-loading");
+    let activeGroup = "{{ selected_group }}";
     let activeSite = feed.dataset.site;
+
+    function sitesForGroup(groupId) {
+      const group = groups.find((entry) => entry.id === groupId);
+      return group ? group.sites : [];
+    }
+
+    function renderSites(groupId, preferredSite) {
+      const sites = sitesForGroup(groupId);
+      siteSwitcher.innerHTML = "";
+      sites.forEach((site) => {
+        const button = document.createElement("button");
+        const profile = profiles[site];
+        button.type = "button";
+        button.className = "site-switch";
+        if (site === activeSite) {
+          button.classList.add("is-active");
+        }
+        if (site !== "all" && profile && !profile.is_available) {
+          button.classList.add("is-limited");
+          button.title = profile.status_note || "";
+        }
+        button.dataset.site = site;
+        button.textContent = profile ? profile.label : site;
+        button.addEventListener("click", () => loadSite(site));
+        siteSwitcher.appendChild(button);
+      });
+
+      const nextSite = preferredSite && sites.includes(preferredSite) ? preferredSite : sites[0];
+      if (nextSite && nextSite !== activeSite) {
+        activeSite = nextSite;
+      }
+      Array.from(siteSwitcher.querySelectorAll("[data-site]")).forEach((button) => {
+        button.classList.toggle("is-active", button.dataset.site === activeSite);
+      });
+    }
 
     function loadSite(site) {
       activeSite = site;
       feed.dataset.site = site;
       loading.classList.add("is-visible");
-      buttons.forEach((button) => button.classList.toggle("is-active", button.dataset.site === site));
+      Array.from(siteSwitcher.querySelectorAll("[data-site]")).forEach((button) => {
+        button.classList.toggle("is-active", button.dataset.site === site);
+      });
       htmx.ajax("GET", `/fragments/home-feed?site=${encodeURIComponent(site)}&refresh_token=${Date.now()}`, {
         target: "#home-feed",
         swap: "innerHTML",
       });
     }
 
-    buttons.forEach((button) => {
+    groupButtons.forEach((button) => {
       button.addEventListener("click", () => {
-        loadSite(button.dataset.site);
+        activeGroup = button.dataset.group;
+        groupButtons.forEach((entry) => entry.classList.toggle("is-active", entry === button));
+        const groupSites = sitesForGroup(activeGroup);
+        const nextSite = activeGroup === "all" ? "all" : groupSites[0];
+        renderSites(activeGroup, nextSite);
+        if (nextSite) {
+          loadSite(nextSite);
+        }
       });
     });
 
@@ -70,6 +119,8 @@
         loading.classList.remove("is-visible");
       }
     });
+
+    renderSites(activeGroup, activeSite);
   })();
 </script>
 {% endblock %}

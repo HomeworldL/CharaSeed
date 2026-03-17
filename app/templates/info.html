@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}资讯 | CharaSeed{% endblock %}
+
+{% block content %}
+<section class="panel info-hero">
+  <div>
+    <p class="eyebrow">Info</p>
+    <h1>站内页面、外部站点、API 文档和参考入口都收在这里。</h1>
+  </div>
+</section>
+
+{% for section in sections %}
+  <section class="panel">
+    <div class="section-head">
+      <div>
+        <h2>{{ section.title }}</h2>
+      </div>
+    </div>
+    <div class="info-grid">
+      {% for item in section.entries %}
+        <article class="info-card">
+          <strong>{{ item.label }}</strong>
+          <p class="muted">{{ item.description }}</p>
+          <div class="tag-row">
+            {% for link in item.links %}
+              <a
+                class="tag info-link"
+                href="{{ link.url }}"
+                {% if link.url.startswith('http') %}target="_blank" rel="noreferrer"{% endif %}
+              >{{ link.label }}</a>
+            {% endfor %}
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+{% endfor %}
+{% endblock %}

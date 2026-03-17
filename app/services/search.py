@@ -6,16 +6,15 @@ import time
 
 from app.config import settings
 from app.adapters.anilist import AniListAdapter
+from app.adapters.bangumi import BangumiAdapter
 from app.adapters.danbooru import DanbooruAdapter
 from app.adapters.hpoi import HpoiAdapter
-from app.adapters.konachan import KonachanAdapter
-from app.adapters.myfigurecollection import MyFigureCollectionAdapter
 from app.adapters.safebooru import SafebooruAdapter
 from app.adapters.sketchfab import SketchfabAdapter
 from app.adapters.yandere import YandereAdapter
 from app.adapters.zerochan import ZerochanAdapter
 from app.search_types import SearchResponse, SearchResult
-from app.site_profiles import SITE_PROFILES
+from app.site_profiles import SITE_PROFILES, SITE_REGISTRY
 
 
 class SearchService:
@@ -26,8 +25,7 @@ class SearchService:
             "zerochan": ZerochanAdapter(),
             "hpoi": HpoiAdapter(),
             "yandere": YandereAdapter(),
-            "konachan": KonachanAdapter(),
-            "myfigurecollection": MyFigureCollectionAdapter(),
+            "bangumi": BangumiAdapter(),
             "anilist": AniListAdapter(),
             "sketchfab": SketchfabAdapter(),
         }
@@ -76,6 +74,9 @@ class SearchService:
         *,
         force_refresh: bool = False,
     ) -> tuple[str, list[SearchResult], str | None]:
+        profile = SITE_REGISTRY.get(site)
+        if profile and not profile.get("is_available", False):
+            return site, [], profile.get("status_note") or "当前后端暂未接通"
         cache_key = (site, query.strip().lower(), limit)
         if not force_refresh:
             cached = self._cache.get(cache_key)
