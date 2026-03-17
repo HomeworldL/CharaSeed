@@ -22,26 +22,40 @@
 
 <div id="home-loading" class="loading-note htmx-indicator">正在生成今日候选流...</div>
 
-<section
-  id="home-feed"
-  class="home-feed-shell"
-  data-site="{{ selected_site }}"
-  hx-get="/fragments/home-feed?site={{ selected_site }}"
-  hx-trigger="load"
-  hx-indicator="#home-loading"
-></section>
+<section id="home-feed" class="home-feed-shell" data-site="{{ selected_site }}" data-limit="{{ current_limit }}"></section>
+
+<section class="panel result-limit-panel">
+  <div class="result-limit-row">
+    <span class="muted">每页显示</span>
+    <div class="site-switcher" id="home-limit-switcher">
+      {% for limit in result_limits %}
+        <button
+          type="button"
+          class="site-switch {% if limit == current_limit %}is-active{% endif %}"
+          data-limit="{{ limit }}"
+        >{{ limit }}</button>
+      {% endfor %}
+    </div>
+  </div>
+</section>
 
 <script>
   (() => {
+    const storageKey = "charaseed.home.limit";
     const profiles = {{ site_profiles | tojson }};
     const groups = {{ source_groups | tojson }};
     const groupButtons = Array.from(document.querySelectorAll("#home-group-switcher [data-group]"));
     const siteSwitcher = document.getElementById("home-site-switcher");
+    const limitButtons = Array.from(document.querySelectorAll("#home-limit-switcher [data-limit]"));
     const feed = document.getElementById("home-feed");
     const refreshButton = document.getElementById("home-refresh-button");
     const loading = document.getElementById("home-loading");
     let activeGroup = "{{ selected_group }}";
     let activeSite = feed.dataset.site;
+    let activeLimit = Number(window.localStorage.getItem(storageKey) || feed.dataset.limit || {{ current_limit }});
+    if (![25, 50, 75, 100].includes(activeLimit)) {
+      activeLimit = {{ current_limit }};
+    }
 
     function sitesForGroup(groupId) {
       const group = groups.find((entry) => entry.id === groupId);
@@ -81,11 +95,15 @@
     function loadSite(site) {
       activeSite = site;
       feed.dataset.site = site;
+      feed.dataset.limit = String(activeLimit);
       loading.classList.add("is-visible");
       Array.from(siteSwitcher.querySelectorAll("[data-site]")).forEach((button) => {
         button.classList.toggle("is-active", button.dataset.site === site);
       });
-      htmx.ajax("GET", `/fragments/home-feed?site=${encodeURIComponent(site)}&refresh_token=${Date.now()}`, {
+      limitButtons.forEach((button) => {
+        button.classList.toggle("is-active", Number(button.dataset.limit) === activeLimit);
+      });
+      htmx.ajax("GET", `/fragments/home-feed?site=${encodeURIComponent(site)}&limit=${activeLimit}&refresh_token=${Date.now()}`, {
         target: "#home-feed",
         swap: "innerHTML",
       });
@@ -108,6 +126,14 @@
       loadSite(activeSite);
     });
 
+    limitButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        activeLimit = Number(button.dataset.limit);
+        window.localStorage.setItem(storageKey, String(activeLimit));
+        loadSite(activeSite);
+      });
+    });
+
     document.body.addEventListener("htmx:afterSwap", (event) => {
       if (event.detail.target && event.detail.target.id === "home-feed") {
         loading.classList.remove("is-visible");
@@ -121,6 +147,8 @@
     });
 
     renderSites(activeGroup, activeSite);
+    window.localStorage.setItem(storageKey, String(activeLimit));
+    loadSite(activeSite);
   })();
 </script>
 {% endblock %}

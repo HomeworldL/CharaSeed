@@ -12,6 +12,7 @@
     id="discover-search-form"
   >
     <input type="hidden" name="site_mode" id="site-mode-input" value="{{ selected_site_mode }}">
+    <input type="hidden" name="limit" id="discover-limit-input" value="{{ current_limit }}">
     <div class="discover-grid">
       <aside class="group-rail" id="discover-group-switcher">
         {% for group in source_groups %}
@@ -56,20 +57,44 @@
   {% include "partials/search_results.html" %}
 </section>
 
+<section class="panel result-limit-panel">
+  <div class="result-limit-row">
+    <span class="muted">每页显示</span>
+    <div class="site-switcher" id="discover-limit-switcher">
+      {% for limit in result_limits %}
+        <button
+          type="button"
+          class="site-switch {% if limit == current_limit %}is-active{% endif %}"
+          data-limit="{{ limit }}"
+        >{{ limit }}</button>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
 <script>
   (() => {
+    const storageKey = "charaseed.discover.limit";
     const profiles = {{ site_profiles | tojson }};
     const groups = {{ source_groups | tojson }};
     const groupButtons = Array.from(document.querySelectorAll("#discover-group-switcher [data-group]"));
     const siteSwitcher = document.getElementById("discover-site-switcher");
     const input = document.getElementById("site-mode-input");
+    const limitInput = document.getElementById("discover-limit-input");
+    const limitButtons = Array.from(document.querySelectorAll("#discover-limit-switcher [data-limit]"));
     const title = document.getElementById("helper-title");
     const description = document.getElementById("helper-description");
     const bestFor = document.getElementById("helper-best-for");
     const examples = document.getElementById("helper-examples");
+    const form = document.getElementById("discover-search-form");
     const searchInput = document.querySelector('#discover-search-form input[name="q"]');
     let activeGroup = "{{ selected_group }}";
     let activeSite = "{{ selected_site_mode }}";
+    let activeLimit = Number(window.localStorage.getItem(storageKey) || limitInput.value || {{ current_limit }});
+    if (![25, 50, 75, 100].includes(activeLimit)) {
+      activeLimit = {{ current_limit }};
+    }
+    limitInput.value = String(activeLimit);
 
     function sitesForGroup(groupId) {
       const group = groups.find((entry) => entry.id === groupId);
@@ -127,6 +152,9 @@
         input.value = nextSite;
         renderExamples(nextSite);
       }
+      limitButtons.forEach((button) => {
+        button.classList.toggle("is-active", Number(button.dataset.limit) === activeLimit);
+      });
       Array.from(siteSwitcher.querySelectorAll("[data-site]")).forEach((entry) => {
         entry.classList.toggle("is-active", entry.dataset.site === activeSite);
       });
@@ -144,6 +172,20 @@
       button.addEventListener("click", () => {
         searchInput.value = button.dataset.example;
         searchInput.focus();
+      });
+    });
+
+    limitButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        activeLimit = Number(button.dataset.limit);
+        limitInput.value = String(activeLimit);
+        window.localStorage.setItem(storageKey, String(activeLimit));
+        limitButtons.forEach((entry) => {
+          entry.classList.toggle("is-active", entry === button);
+        });
+        if (searchInput.value.trim()) {
+          form.requestSubmit();
+        }
       });
     });
 

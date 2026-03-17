@@ -411,6 +411,18 @@ h3 {
   text-decoration: none;
 }
 
+.result-limit-panel {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+.result-limit-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .site-stat-card {
   display: grid;
   gap: 0.25rem;

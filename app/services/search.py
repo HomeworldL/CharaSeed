@@ -7,8 +7,12 @@ import time
 from app.config import settings
 from app.adapters.anilist import AniListAdapter
 from app.adapters.bangumi import BangumiAdapter
+from app.adapters.booth import BoothAdapter
+from app.adapters.bowlroll import BowlRollAdapter
 from app.adapters.danbooru import DanbooruAdapter
+from app.adapters.e_shuushuu import EShuushuuAdapter
 from app.adapters.hpoi import HpoiAdapter
+from app.adapters.myanimelist import MyAnimeListAdapter
 from app.adapters.safebooru import SafebooruAdapter
 from app.adapters.sketchfab import SketchfabAdapter
 from app.adapters.yandere import YandereAdapter
@@ -25,9 +29,13 @@ class SearchService:
             "zerochan": ZerochanAdapter(),
             "hpoi": HpoiAdapter(),
             "yandere": YandereAdapter(),
+            "e_shuushuu": EShuushuuAdapter(),
             "bangumi": BangumiAdapter(),
             "anilist": AniListAdapter(),
+            "myanimelist": MyAnimeListAdapter(),
             "sketchfab": SketchfabAdapter(),
+            "booth": BoothAdapter(),
+            "bowlroll": BowlRollAdapter(),
         }
         self._cache: dict[tuple[str, str, int], tuple[float, list[SearchResult]]] = {}
 

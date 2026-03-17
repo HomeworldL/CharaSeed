@@ -47,6 +47,8 @@ templates.env.globals["status_options"] = STATUS_OPTIONS
 app = FastAPI(title=settings.app_name)
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
+ALLOWED_RESULT_LIMITS = (25, 50, 75, 100)
+
 
 def bootstrap_storage() -> None:
     Base.metadata.create_all(bind=engine)
@@ -96,6 +98,10 @@ def _result_payload(
         "artist_names": artist_names,
         "maker_names": maker_names,
     }
+
+
+def _normalized_limit(value: int | None) -> int:
+    return value if value in ALLOWED_RESULT_LIMITS else ALLOWED_RESULT_LIMITS[0]
 
 
 def _source_group_payload(*, include_all_group: bool = False, include_all_site: bool = False) -> list[dict[str, object]]:
@@ -206,6 +212,8 @@ def home_page(request: Request) -> HTMLResponse:
             "selected_site": "all",
             "source_groups": _source_group_payload(include_all_group=True, include_all_site=True),
             "selected_group": "all",
+            "result_limits": ALLOWED_RESULT_LIMITS,
+            "current_limit": ALLOWED_RESULT_LIMITS[0],
         },
     )
 
@@ -214,18 +222,20 @@ def home_page(request: Request) -> HTMLResponse:
 async def home_feed_fragment(
     request: Request,
     site: str = Query(default="all"),
+    limit: int = Query(default=ALLOWED_RESULT_LIMITS[0]),
     refresh_token: str | None = Query(default=None),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
     if site not in HOME_SITE_ORDER:
         raise HTTPException(status_code=400, detail="Invalid site")
+    limit = _normalized_limit(limit)
     owner = default_user(session)
     if site == "all":
         site_feed = await build_mixed_feed(
             session,
             owner.id,
             refresh_token=refresh_token or str(time.time_ns()),
-            limit=12,
+            limit=limit,
             force_refresh=True,
         )
     else:
@@ -234,7 +244,7 @@ async def home_feed_fragment(
             owner.id,
             site,
             refresh_token=refresh_token or str(time.time_ns()),
-            limit=12,
+            limit=limit,
             force_refresh=True,
         )
     return templates.TemplateResponse(
@@ -244,6 +254,7 @@ async def home_feed_fragment(
             "site": site,
             "site_feed": site_feed,
             "site_profiles": site_profiles,
+            "current_limit": limit,
         },
     )
 
@@ -263,6 +274,8 @@ def discover(request: Request) -> HTMLResponse:
             "site_profile": site_profiles[SITE_ORDER[0]],
             "source_groups": _source_group_payload(include_all_group=True),
             "selected_group": site_profiles[SITE_ORDER[0]]["group"],
+            "result_limits": ALLOWED_RESULT_LIMITS,
+            "current_limit": ALLOWED_RESULT_LIMITS[0],
         },
     )
 
@@ -283,12 +296,14 @@ async def search_results_fragment(
     request: Request,
     q: str = Query(..., min_length=1),
     site_mode: str = Query(default=SITE_ORDER[0]),
+    limit: int = Query(default=ALLOWED_RESULT_LIMITS[0]),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
     if site_mode not in SITE_ORDER:
         raise HTTPException(status_code=400, detail="Invalid site")
+    limit = _normalized_limit(limit)
     owner = default_user(session)
-    results, error = await search_service.search_site(site_mode, q, limit=12)
+    results, error = await search_service.search_site(site_mode, q, limit=limit)
     record_search_event(session, owner.id, q, site_mode)
     return templates.TemplateResponse(
         "partials/search_results.html",
@@ -300,6 +315,7 @@ async def search_results_fragment(
             "site_mode": site_mode,
             "site_profile": site_profiles[site_mode],
             "site_profiles": site_profiles,
+            "current_limit": limit,
         },
     )
 

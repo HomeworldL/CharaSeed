@@ -219,8 +219,9 @@ async def build_site_feed(
             if normalized
         ][:2]
 
+    per_query_limit = min(limit, max(6, (limit // max(len(queries), 1)) + 4))
     tasks = [
-        search_service.search_site(site, query, limit=max(3, min(limit, 6)), force_refresh=force_refresh)
+        search_service.search_site(site, query, limit=per_query_limit, force_refresh=force_refresh)
         for query in queries
     ]
     responses = await asyncio.gather(*tasks)
@@ -260,13 +261,14 @@ async def build_mixed_feed(
     force_refresh: bool = False,
 ) -> dict[str, Any]:
     active_sites = _mixed_home_sites()
+    per_site_limit = min(limit, max(4, (limit // max(len(active_sites), 1)) + 3))
     tasks = [
         build_site_feed(
             session,
             owner_id,
             site,
             refresh_token=f"{refresh_token}:{site}",
-            limit=max(3, min(5, limit)),
+            limit=per_site_limit,
             force_refresh=force_refresh,
             mark_exposure=False,
         )
