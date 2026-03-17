@@ -6,13 +6,13 @@
 <section class="hero-card">
   <div>
     <p class="eyebrow">Discover</p>
-    <h1>把分散在不同站点的角色图、条目和手办候选，收进一个私人的收藏册。</h1>
-    <p class="hero-copy">第一版接入 Danbooru、Safebooru、Zerochan 和 Hpoi。搜索、预览、收藏和主题归档都在同一个界面完成。</p>
+    <h1>统一搜索入口保留，但站点语境要明显。</h1>
+    <p class="hero-copy">这一页是纯搜索工具页。搜索框固定，切换不同站点时会改变提示、示例词和结果细节，但不强行增加 image / figure 等二级限制。</p>
   </div>
   <div class="hero-badge">
-    <span>真实站点搜索</span>
-    <span>引用式收藏</span>
-    <span>角色 / 作品归档</span>
+    <span>按钮式站点切换</span>
+    <span>自然语言搜索</span>
+    <span>结果细节按站点变化</span>
   </div>
 </section>
 
@@ -22,31 +22,90 @@
     hx-get="/fragments/search-results"
     hx-target="#search-results"
     hx-indicator="#search-loading"
+    id="discover-search-form"
   >
+    <input type="hidden" name="site_mode" id="site-mode-input" value="{{ selected_site_mode }}">
     <div class="search-line">
       <input type="text" name="q" value="{{ query }}" placeholder="搜索角色、作品、标签或手办名，例如：初音未来、asuna、genshin impact" required>
       <button type="submit">开始搜索</button>
     </div>
 
-    <div class="filter-row">
-      <div class="filter-group">
-        <span>站点</span>
-        {% for site in ["danbooru", "safebooru", "zerochan", "hpoi"] %}
-          <label><input type="checkbox" name="sites" value="{{ site }}" checked> {{ site }}</label>
-        {% endfor %}
-      </div>
-      <div class="filter-group">
-        <span>类型</span>
-        {% for item_type in ["image", "figure", "entry"] %}
-          <label><input type="checkbox" name="item_types" value="{{ item_type }}"> {{ item_type }}</label>
-        {% endfor %}
-      </div>
-      <div id="search-loading" class="loading-note htmx-indicator">正在向多个源站拉取结果...</div>
+    <div class="site-switcher">
+      <button type="button" class="site-switch is-active" data-site="all">All</button>
+      {% for site in site_order %}
+        <button type="button" class="site-switch" data-site="{{ site }}">{{ site_profiles[site].label }}</button>
+      {% endfor %}
     </div>
+
+    <div class="discover-helper-card" id="discover-helper-card">
+      <div>
+        <p class="eyebrow" id="helper-title">{{ site_profiles["all"].title }}</p>
+        <p id="helper-description">{{ site_profiles["all"].description }}</p>
+      </div>
+      <div>
+        <p class="muted small" id="helper-best-for">{{ site_profiles["all"].best_for }}</p>
+        <div class="signal-row" id="helper-examples">
+          {% for example in site_profiles["all"].examples %}
+            <button type="button" class="signal-chip signal-chip-button" data-example="{{ example }}">{{ example }}</button>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div id="search-loading" class="loading-note htmx-indicator">正在向目标站点拉取结果...</div>
   </form>
 </section>
 
 <section id="search-results">
   {% include "partials/search_results.html" %}
 </section>
+
+<script>
+  (() => {
+    const profiles = {{ site_profiles | tojson }};
+    const switches = Array.from(document.querySelectorAll(".site-switch"));
+    const input = document.getElementById("site-mode-input");
+    const title = document.getElementById("helper-title");
+    const description = document.getElementById("helper-description");
+    const bestFor = document.getElementById("helper-best-for");
+    const examples = document.getElementById("helper-examples");
+    const searchInput = document.querySelector('#discover-search-form input[name="q"]');
+
+    function renderExamples(site) {
+      const profile = profiles[site];
+      title.textContent = profile.title;
+      description.textContent = profile.description;
+      bestFor.textContent = profile.best_for;
+      examples.innerHTML = "";
+      profile.examples.forEach((example) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "signal-chip signal-chip-button";
+        button.dataset.example = example;
+        button.textContent = example;
+        button.addEventListener("click", () => {
+          searchInput.value = example;
+          searchInput.focus();
+        });
+        examples.appendChild(button);
+      });
+    }
+
+    switches.forEach((button) => {
+      button.addEventListener("click", () => {
+        const site = button.dataset.site;
+        input.value = site;
+        switches.forEach((entry) => entry.classList.toggle("is-active", entry === button));
+        renderExamples(site);
+      });
+    });
+
+    examples.querySelectorAll("[data-example]").forEach((button) => {
+      button.addEventListener("click", () => {
+        searchInput.value = button.dataset.example;
+        searchInput.focus();
+      });
+    });
+  })();
+</script>
 {% endblock %}

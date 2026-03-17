@@ -15,6 +15,7 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     items: Mapped[list["Item"]] = relationship(back_populates="owner")
+    search_events: Mapped[list["SearchEvent"]] = relationship(back_populates="owner")
 
 
 class ItemEntity(Base):
@@ -125,3 +126,15 @@ class Tag(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     item_tags: Mapped[list[ItemTag]] = relationship(back_populates="tag", cascade="all, delete-orphan")
+
+
+class SearchEvent(Base):
+    __tablename__ = "search_events"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    owner_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    query: Mapped[str] = mapped_column(String(255))
+    selected_site: Mapped[str] = mapped_column(String(64), default="all")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    owner: Mapped[User | None] = relationship(back_populates="search_events")

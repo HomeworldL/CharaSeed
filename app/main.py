@@ -21,13 +21,16 @@ from app.services.catalog import (
     list_items,
     list_tags,
     payload_from_json,
+    record_search_event,
     related_items,
     serialize_entity,
     serialize_item,
     slugify,
     split_tokens,
 )
-from app.services.search import search_service
+from app.services.feed import build_site_feed, build_today_feed
+from app.services.search import search_service, site_profiles
+from app.site_profiles import SITE_ORDER, sites_for_mode
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -53,7 +56,55 @@ def on_startup() -> None:
 
 @app.get("/", response_class=HTMLResponse)
 def root() -> RedirectResponse:
-    return RedirectResponse(url="/discover", status_code=302)
+    return RedirectResponse(url="/home", status_code=302)
+
+
+@app.get("/home", response_class=HTMLResponse)
+def home_page(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(
+        "home.html",
+        {
+            "request": request,
+            "site_profiles": site_profiles,
+            "site_order": SITE_ORDER,
+        },
+    )
+
+
+@app.get("/fragments/home-feed", response_class=HTMLResponse)
+async def home_feed_fragment(request: Request, session: Session = Depends(get_session)) -> HTMLResponse:
+    owner = default_user(session)
+    feed = await build_today_feed(session, owner.id)
+    return templates.TemplateResponse(
+        "partials/home_feed.html",
+        {
+            "request": request,
+            "feed": feed,
+            "site_profiles": site_profiles,
+            "site_order": SITE_ORDER,
+        },
+    )
+
+
+@app.get("/fragments/home-site-panel", response_class=HTMLResponse)
+async def home_site_panel_fragment(
+    request: Request,
+    site: str = Query(...),
+    session: Session = Depends(get_session),
+) -> HTMLResponse:
+    if site not in SITE_ORDER:
+        raise HTTPException(status_code=404, detail="Site not found")
+    owner = default_user(session)
+    site_feed = await build_site_feed(session, owner.id, site)
+    return templates.TemplateResponse(
+        "partials/home_site_panel.html",
+        {
+            "request": request,
+            "site": site,
+            "site_feed": site_feed,
+            "site_profiles": site_profiles,
+        },
+    )
 
 
 @app.get("/discover", response_class=HTMLResponse)
@@ -65,8 +116,9 @@ def discover(request: Request) -> HTMLResponse:
             "query": "",
             "results": [],
             "errors": {},
-            "selected_sites": ["danbooru", "safebooru", "zerochan", "hpoi"],
-            "selected_types": [],
+            "site_profiles": site_profiles,
+            "site_order": SITE_ORDER,
+            "selected_site_mode": "all",
         },
     )
 
@@ -75,10 +127,13 @@ def discover(request: Request) -> HTMLResponse:
 async def search_results_fragment(
     request: Request,
     q: str = Query(..., min_length=1),
-    sites: list[str] | None = Query(default=None),
-    item_types: list[str] | None = Query(default=None),
+    site_mode: str = Query(default="all"),
+    session: Session = Depends(get_session),
 ) -> HTMLResponse:
-    search_response = await search_service.search(q, sites=sites, item_types=item_types, limit_per_site=8)
+    owner = default_user(session)
+    active_sites = sites_for_mode(site_mode)
+    search_response = await search_service.search(q, sites=active_sites, limit_per_site=8)
+    record_search_event(session, owner.id, q, site_mode)
     return templates.TemplateResponse(
         "partials/search_results.html",
         {
@@ -86,6 +141,8 @@ async def search_results_fragment(
             "results": search_response.results,
             "errors": search_response.errors,
             "query": q,
+            "site_mode": site_mode,
+            "site_profile": site_profiles[site_mode if site_mode in site_profiles else "all"],
         },
     )
 
@@ -354,9 +411,14 @@ def entity_detail_page(
 async def api_search(
     q: str,
     sites: list[str] | None = Query(default=None),
+    site_mode: str | None = Query(default=None),
     item_types: list[str] | None = Query(default=None),
+    session: Session = Depends(get_session),
 ) -> JSONResponse:
-    response = await search_service.search(q, sites=sites, item_types=item_types, limit_per_site=8)
+    owner = default_user(session)
+    active_sites = sites or sites_for_mode(site_mode)
+    response = await search_service.search(q, sites=active_sites, item_types=item_types, limit_per_site=8)
+    record_search_event(session, owner.id, q, site_mode or "all")
     return JSONResponse(
         {
             "query": q,

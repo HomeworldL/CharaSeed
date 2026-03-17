@@ -7,6 +7,7 @@ from app.adapters.hpoi import HpoiAdapter
 from app.adapters.safebooru import SafebooruAdapter
 from app.adapters.zerochan import ZerochanAdapter
 from app.search_types import SearchResponse, SearchResult
+from app.site_profiles import SITE_PROFILES
 
 
 class SearchService:
@@ -51,3 +52,4 @@ class SearchService:
 
 
 search_service = SearchService()
+site_profiles = SITE_PROFILES

@@ -98,3 +98,26 @@ The first coded version must let the user:
 - browse and filter the collection
 - open theme pages
 - edit an item and follow the original source
+
+## Round 2 Addendum
+### Homepage
+- Add a dedicated `/home` page for a real-time "today candidate feed"
+- Keep `/discover` as a separate search tool page
+- Homepage first screen uses a visual mixed waterfall feed
+- Clicking a site tab expands a site-specific section below the mixed feed
+- Mixed feed and expanded site sections both support refresh
+
+### Recommendation Inputs
+- Collect signals from:
+  - recent searches
+  - high-frequency entities from collected items
+  - high-frequency tags
+  - source-site preference
+- Use lightweight scoring and site-specific query mapping
+- No saved-search UI in this round
+
+### Search Page Refresh
+- Replace checkbox site selectors with button-style segmented controls
+- Remove explicit `image/figure/entry` search restriction from the page
+- Keep one natural-language search box
+- Differentiate sites via helper cards, suggestion chips, and result-card detail fields

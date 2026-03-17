@@ -9,7 +9,7 @@ from typing import Any
 from sqlalchemy import Select, func, or_, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app.models import Entity, Item, ItemAsset, ItemEntity, ItemTag, Tag, User
+from app.models import Entity, Item, ItemAsset, ItemEntity, ItemTag, SearchEvent, Tag, User
 
 
 ITEM_LOAD_OPTIONS = (
@@ -24,6 +24,22 @@ def init_database(session: Session) -> None:
     if default_user is None:
         session.add(User(username="local", display_name="Local Collector"))
         session.commit()
+
+
+def record_search_event(session: Session, owner_id: int, query: str, selected_site: str) -> None:
+    cleaned_query = (query or "").strip()
+    if not cleaned_query:
+        return
+    latest = session.scalar(
+        select(SearchEvent)
+        .where(SearchEvent.owner_id == owner_id)
+        .order_by(SearchEvent.created_at.desc())
+        .limit(1)
+    )
+    if latest and latest.query == cleaned_query and latest.selected_site == selected_site:
+        return
+    session.add(SearchEvent(owner_id=owner_id, query=cleaned_query, selected_site=selected_site))
+    session.commit()
 
 
 def default_user(session: Session) -> User:
@@ -266,6 +282,76 @@ def list_tags(session: Session, owner_id: int, query: str | None = None) -> list
     if query:
         stmt = stmt.where(Tag.name.ilike(f"%{query}%"))
     return list(session.scalars(stmt).unique())
+
+
+def recent_search_queries(session: Session, owner_id: int, limit: int = 12) -> list[str]:
+    stmt = (
+        select(SearchEvent.query)
+        .where(SearchEvent.owner_id == owner_id)
+        .order_by(SearchEvent.created_at.desc())
+        .limit(limit * 3)
+    )
+    seen: set[str] = set()
+    results: list[str] = []
+    for query in session.scalars(stmt):
+        lowered = query.lower()
+        if lowered in seen:
+            continue
+        seen.add(lowered)
+        results.append(query)
+        if len(results) >= limit:
+            break
+    return results
+
+
+def discovery_profile(session: Session, owner_id: int) -> dict[str, list[str]]:
+    recent_searches = recent_search_queries(session, owner_id, limit=8)
+
+    top_tags_stmt = (
+        select(Tag.name, func.count(ItemTag.id).label("weight"))
+        .join(ItemTag, Tag.id == ItemTag.tag_id)
+        .join(Item, Item.id == ItemTag.item_id)
+        .where(Item.owner_id == owner_id)
+        .group_by(Tag.id)
+        .order_by(func.count(ItemTag.id).desc(), Tag.name.asc())
+        .limit(8)
+    )
+    top_entity_stmt = (
+        select(Entity.entity_type, Entity.name, func.count(ItemEntity.id).label("weight"))
+        .join(ItemEntity, Entity.id == ItemEntity.entity_id)
+        .join(Item, Item.id == ItemEntity.item_id)
+        .where(Item.owner_id == owner_id)
+        .group_by(Entity.id)
+        .order_by(func.count(ItemEntity.id).desc(), Entity.name.asc())
+        .limit(24)
+    )
+    source_stmt = (
+        select(Item.source_site, func.count(Item.id).label("weight"))
+        .where(Item.owner_id == owner_id, Item.source_site.is_not(None))
+        .group_by(Item.source_site)
+        .order_by(func.count(Item.id).desc())
+        .limit(4)
+    )
+
+    characters: list[str] = []
+    works: list[str] = []
+    artists: list[str] = []
+    for entity_type, name, _weight in session.execute(top_entity_stmt):
+        if entity_type == "character" and len(characters) < 5:
+            characters.append(name)
+        elif entity_type == "work" and len(works) < 5:
+            works.append(name)
+        elif entity_type == "artist" and len(artists) < 4:
+            artists.append(name)
+
+    return {
+        "recent_searches": recent_searches,
+        "top_tags": [name for name, _weight in session.execute(top_tags_stmt)],
+        "top_characters": characters,
+        "top_works": works,
+        "top_artists": artists,
+        "preferred_sites": [site for site, _weight in session.execute(source_stmt) if site],
+    }
 
 
 def related_items(session: Session, owner_id: int, item: Item, limit: int = 6) -> list[Item]:

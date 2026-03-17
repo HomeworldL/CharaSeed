@@ -1,25 +1,28 @@
-<section class="panel panel-soft">
+<section class="panel site-focus-panel">
   <div class="section-head">
     <div>
-      <p class="eyebrow">Results</p>
-      <h2>搜索结果</h2>
+      <p class="eyebrow">{{ site_profiles[site].label }}</p>
+      <h2>{{ site_profiles[site].title }}</h2>
+      <p class="muted">{{ site_profiles[site].description }}</p>
     </div>
-    {% if query %}
-      <span class="muted">关键词：{{ query }}{% if site_profile %} · {{ site_profile.label }}{% endif %}</span>
-    {% endif %}
+    <button
+      hx-get="/fragments/home-site-panel?site={{ site }}"
+      hx-target="#home-site-panel"
+    >刷新 {{ site_profiles[site].label }}</button>
   </div>
 
-  {% if errors %}
-    <div class="error-stack">
-      {% for site, error in errors.items() %}
-        <div class="error-pill">{{ site }} 暂时不可用：{{ error }}</div>
+  <div class="site-helper-card">
+    <p><strong>这个站点更适合：</strong>{{ site_profiles[site].best_for }}</p>
+    <div class="signal-row">
+      {% for query in site_feed.queries %}
+        <span class="signal-chip">{{ query }}</span>
       {% endfor %}
     </div>
-  {% endif %}
+  </div>
 
-  {% if results %}
+  {% if site_feed.results %}
     <div class="result-grid">
-      {% for result in results %}
+      {% for result in site_feed.results %}
         <article class="result-card">
           <div class="result-media">
             {% if result.preview_url %}
@@ -27,19 +30,19 @@
             {% else %}
               <div class="placeholder-media">No preview</div>
             {% endif %}
-            <span class="source-chip">{{ result.source_site }}</span>
+            <span class="source-chip">{{ site_profiles[result.source_site].label }}</span>
           </div>
           <div class="result-body">
             <h3>{{ result.title }}</h3>
             <p class="muted">{{ result.subtitle or result.item_type }}</p>
             <div class="tag-row">
-              {% for tag in result.tags[:5] %}
-                <span class="tag">{{ tag }}</span>
+              {% for reason in result.meta.get("feed_reason", []) %}
+                <span class="tag tag-warm">{{ reason }}</span>
               {% endfor %}
             </div>
             <div class="detail-list">
               {% if result.source_site == "hpoi" %}
-                <span>标签：{{ (result.meta.get("labels") or [])[:4] | join(" · ") }}</span>
+                <span>厂商 / 标签：{{ (result.meta.get("labels") or []) | join(" · ") }}</span>
               {% elif result.source_site == "danbooru" %}
                 <span>角色：{{ result.meta.get("character") or "未解析" }}</span>
                 <span>作品：{{ result.meta.get("copyright") or "未解析" }}</span>
@@ -65,18 +68,7 @@
                 <input type="hidden" name="tags_text" value="{{ result.tags | join(', ') }}">
                 <button type="submit" class="button-secondary">预览</button>
               </form>
-              <form hx-get="/fragments/collect-form" hx-target="#modal-panel">
-                <input type="hidden" name="source_site" value="{{ result.source_site }}">
-                <input type="hidden" name="external_id" value="{{ result.external_id }}">
-                <input type="hidden" name="item_type" value="{{ result.item_type }}">
-                <input type="hidden" name="title" value="{{ result.title }}">
-                <input type="hidden" name="subtitle" value="{{ result.subtitle or '' }}">
-                <input type="hidden" name="source_url" value="{{ result.source_url }}">
-                <input type="hidden" name="preview_url" value="{{ result.preview_url or '' }}">
-                <input type="hidden" name="original_url" value="{{ result.original_url or '' }}">
-                <input type="hidden" name="tags_text" value="{{ result.tags | join(', ') }}">
-                <button type="submit">收藏</button>
-              </form>
+              <a class="button-secondary" href="{{ result.source_url }}" target="_blank" rel="noreferrer">打开来源</a>
             </div>
           </div>
         </article>
@@ -84,7 +76,7 @@
     </div>
   {% else %}
     <div class="empty-state">
-      <p>先输入关键词开始搜索。切换站点会改变提示和结果细节，但仍然保持同一个自然语言搜索入口。</p>
+      <p>当前站点没有抓到候选结果。可以先刷新，或者去搜索页补充一些最近搜索信号。</p>
     </div>
   {% endif %}
 </section>

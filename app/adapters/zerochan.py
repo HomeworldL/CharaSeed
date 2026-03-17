@@ -54,7 +54,10 @@ class ZerochanAdapter(SearchAdapter):
                     original_url=item.get("source"),
                     source_url=f"{self.base_url}/{item['id']}",
                     tags=item.get("tags", [])[:24],
-                    meta={"dimensions": f"{item.get('width')}x{item.get('height')}"},
+                    meta={
+                        "dimensions": f"{item.get('width')}x{item.get('height')}",
+                        "primary_tag": item.get("tag"),
+                    },
                     raw=item,
                 )
             )

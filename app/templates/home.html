@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}主页 | CharaSeed{% endblock %}
+
+{% block content %}
+<section class="home-hero">
+  <div class="home-hero-copy">
+    <p class="eyebrow">Today Feed</p>
+    <h1>今天值得继续收藏什么，不该先靠你自己翻站点。</h1>
+    <p class="hero-copy">主页是实时候选流。系统会综合你的收藏和搜索历史，从图片站与手办站里抓出今天更像你会点开的内容。</p>
+    <div class="hero-actions">
+      <button
+        hx-get="/fragments/home-feed"
+        hx-target="#home-feed"
+        hx-indicator="#home-loading"
+      >刷新主页候选</button>
+      <a class="button-secondary" href="/discover">进入搜索页</a>
+    </div>
+  </div>
+  <div class="home-hero-side">
+    <div class="home-note">
+      <strong>主页逻辑</strong>
+      <p>默认先看混合候选瀑布流。点击某个站点后，再在下方展开该站点专区与专属刷新。</p>
+    </div>
+    <div class="site-pill-cluster">
+      {% for site in site_order %}
+        <button
+          type="button"
+          class="site-chip-button"
+          hx-get="/fragments/home-site-panel?site={{ site }}"
+          hx-target="#home-site-panel"
+        >{{ site_profiles[site].label }}</button>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<div id="home-loading" class="loading-note htmx-indicator">正在生成今日候选流...</div>
+
+<section id="home-feed" hx-get="/fragments/home-feed" hx-trigger="load" hx-indicator="#home-loading">
+  <div class="panel">
+    <div class="empty-state">
+      <p>正在准备你的今日候选流...</p>
+    </div>
+  </div>
+</section>
+
+<section id="home-site-panel" class="home-site-panel-shell">
+  <div class="panel">
+    <div class="empty-state">
+      <p>点击上方某个站点，展开它的候选专区、结果细节和单站刷新。</p>
+    </div>
+  </div>
+</section>
+{% endblock %}

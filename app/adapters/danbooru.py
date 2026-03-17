@@ -44,6 +44,9 @@ class DanbooruAdapter(SearchAdapter):
                         "rating": post.get("rating"),
                         "score": post.get("score"),
                         "dimensions": f"{post.get('image_width')}x{post.get('image_height')}",
+                        "character": post.get("tag_string_character"),
+                        "copyright": post.get("tag_string_copyright"),
+                        "artist": post.get("tag_string_artist"),
                     },
                     raw=post,
                 )

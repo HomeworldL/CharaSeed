@@ -44,7 +44,11 @@ class HpoiAdapter(SearchAdapter):
                     original_url=urljoin(self.base_url, href),
                     source_url=urljoin(self.base_url, href),
                     tags=labels[1:8] if len(labels) > 1 else labels[:8],
-                    meta={"labels": labels},
+                    meta={
+                        "labels": labels,
+                        "category": labels[0] if labels else None,
+                        "maker": labels[1] if len(labels) > 1 else None,
+                    },
                     raw={"href": href, "labels": labels},
                 )
             )
