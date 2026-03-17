@@ -1,13 +1,10 @@
-<section class="panel panel-soft">
-  <div class="section-head">
-    <div>
-      <p class="eyebrow">Results</p>
-      <h2>{{ site_profile.label }} 搜索结果</h2>
-    </div>
-    {% if query %}
+<section class="result-stack">
+  {% if query %}
+    <div class="result-meta">
+      <span class="tag type-chip">{{ site_profile.label }}</span>
       <span class="muted">关键词：{{ query }}</span>
-    {% endif %}
-  </div>
+    </div>
+  {% endif %}
 
   {% if errors %}
     <div class="error-stack">
@@ -19,88 +16,11 @@
 
   {% if results %}
     <div class="result-grid">
-      {% for result in results %}
-        {% set character_names = result.meta.get("character") or result.meta.get("primary_tag") or "" %}
-        {% set work_names = result.meta.get("copyright") or "" %}
-        {% set artist_names = result.meta.get("artist") or "" %}
-        {% set maker_names = result.meta.get("maker") or "" %}
-        <article class="result-card">
-          <div class="result-media">
-            {% if result.preview_url %}
-              <img src="{{ result.preview_url }}" alt="{{ result.title }}" loading="lazy">
-            {% else %}
-              <div class="placeholder-media">No preview</div>
-            {% endif %}
-            <span class="source-chip">{{ site_profile.label }}</span>
-          </div>
-          <div class="result-body">
-            <div class="result-copy">
-              <h3>{{ result.title }}</h3>
-              <p class="muted">{{ result.subtitle or item_type_label(result.item_type) }}</p>
-            </div>
-            <div class="tag-row">
-              {% for tag in result.tags[:5] %}
-                <span class="tag">{{ tag }}</span>
-              {% endfor %}
-            </div>
-            <div class="detail-list">
-              {% if result.source_site == "hpoi" %}
-                <span>厂商：{{ result.meta.get("maker") or "未解析" }}</span>
-                <span>分类：{{ result.meta.get("category") or "模型 / 手办" }}</span>
-                <span>标签：{{ (result.meta.get("labels") or [])[:4] | join(" · ") }}</span>
-              {% elif result.source_site == "danbooru" %}
-                <span>角色：{{ result.meta.get("character") or "未解析" }}</span>
-                <span>作品：{{ result.meta.get("copyright") or "未解析" }}</span>
-                <span>画师：{{ result.meta.get("artist") or "未解析" }}</span>
-              {% elif result.source_site == "zerochan" %}
-                <span>主标签：{{ result.meta.get("primary_tag") or "图集" }}</span>
-                <span>尺寸：{{ result.meta.get("dimensions") or "未知" }}</span>
-              {% else %}
-                <span>尺寸：{{ result.meta.get("dimensions") or "未知" }}</span>
-                <span>得分：{{ result.meta.get("score") or "未知" }}</span>
-              {% endif %}
-            </div>
-            <div class="card-actions">
-              <form hx-get="/fragments/item-preview" hx-target="#modal-panel">
-                <input type="hidden" name="source_site" value="{{ result.source_site }}">
-                <input type="hidden" name="external_id" value="{{ result.external_id }}">
-                <input type="hidden" name="item_type" value="{{ result.item_type }}">
-                <input type="hidden" name="title" value="{{ result.title }}">
-                <input type="hidden" name="subtitle" value="{{ result.subtitle or '' }}">
-                <input type="hidden" name="source_url" value="{{ result.source_url }}">
-                <input type="hidden" name="preview_url" value="{{ result.preview_url or '' }}">
-                <input type="hidden" name="original_url" value="{{ result.original_url or '' }}">
-                <input type="hidden" name="tags_text" value="{{ result.tags | join(', ') }}">
-                <input type="hidden" name="character_names" value="{{ character_names }}">
-                <input type="hidden" name="work_names" value="{{ work_names }}">
-                <input type="hidden" name="artist_names" value="{{ artist_names }}">
-                <input type="hidden" name="maker_names" value="{{ maker_names }}">
-                <button type="submit" class="button-secondary">预览</button>
-              </form>
-              <form hx-get="/fragments/collect-form" hx-target="#modal-panel">
-                <input type="hidden" name="source_site" value="{{ result.source_site }}">
-                <input type="hidden" name="external_id" value="{{ result.external_id }}">
-                <input type="hidden" name="item_type" value="{{ result.item_type }}">
-                <input type="hidden" name="title" value="{{ result.title }}">
-                <input type="hidden" name="subtitle" value="{{ result.subtitle or '' }}">
-                <input type="hidden" name="source_url" value="{{ result.source_url }}">
-                <input type="hidden" name="preview_url" value="{{ result.preview_url or '' }}">
-                <input type="hidden" name="original_url" value="{{ result.original_url or '' }}">
-                <input type="hidden" name="tags_text" value="{{ result.tags | join(', ') }}">
-                <input type="hidden" name="character_names" value="{{ character_names }}">
-                <input type="hidden" name="work_names" value="{{ work_names }}">
-                <input type="hidden" name="artist_names" value="{{ artist_names }}">
-                <input type="hidden" name="maker_names" value="{{ maker_names }}">
-                <button type="submit">归档收藏</button>
-              </form>
-            </div>
-          </div>
-        </article>
-      {% endfor %}
+      {% include "partials/result_cards.html" %}
     </div>
   {% else %}
     <div class="empty-state">
-      <p>先选择一个站点并输入关键词。搜索页只在当前站点内查询，不再混合多个来源。</p>
+      <p>输入关键词后，这里会直接显示当前站点的结果。</p>
     </div>
   {% endif %}
 </section>

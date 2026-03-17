@@ -32,6 +32,8 @@ LEGACY_STATUS_MAP = {
 ITEM_TYPE_LABELS = {
     "image": "图片",
     "figure": "手办",
+    "model": "模型",
+    "video": "视频",
     "entry": "条目",
 }
 

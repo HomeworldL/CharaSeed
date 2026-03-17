@@ -57,12 +57,6 @@
       if (event.detail.target && event.detail.target.id === "modal-panel") {
         openModal();
       }
-      if (event.detail.target && event.detail.target.id === "mixed-feed-grid") {
-        const empty = document.getElementById("mixed-feed-empty");
-        if (empty && event.detail.target.children.length > 0) {
-          empty.style.display = "none";
-        }
-      }
     });
   </script>
 </body>

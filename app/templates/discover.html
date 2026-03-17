@@ -3,22 +3,9 @@
 {% block title %}发现 | CharaSeed{% endblock %}
 
 {% block content %}
-<section class="hero-card">
-  <div>
-    <p class="eyebrow">Discover</p>
-    <h1>搜索页只做一件事：在当前站点里尽快找到你要的条目。</h1>
-    <p class="hero-copy">先选站点，再搜。搜索框位置不变，但提示、示例词和结果细节会跟着站点变化。</p>
-  </div>
-  <div class="hero-badge">
-    <span>单站点搜索</span>
-    <span>按钮式切换</span>
-    <span>结果细节按站点变化</span>
-  </div>
-</section>
-
 <section class="panel">
   <form
-    class="search-form"
+    class="search-form search-form-quiet"
     hx-get="/fragments/search-results"
     hx-target="#search-results"
     hx-indicator="#search-loading"
@@ -38,8 +25,8 @@
 
     <div class="discover-helper-card" id="discover-helper-card">
       <div>
-        <p class="eyebrow" id="helper-title">{{ site_profiles[selected_site_mode].title }}</p>
-        <p id="helper-description">{{ site_profiles[selected_site_mode].description }}</p>
+        <strong id="helper-title">{{ site_profiles[selected_site_mode].label }}</strong>
+        <p class="muted" id="helper-description">{{ site_profiles[selected_site_mode].description }}</p>
       </div>
       <div>
         <p class="muted small" id="helper-best-for">{{ site_profiles[selected_site_mode].best_for }}</p>
@@ -72,7 +59,7 @@
 
     function renderExamples(site) {
       const profile = profiles[site];
-      title.textContent = profile.title;
+      title.textContent = profile.label;
       description.textContent = profile.description;
       bestFor.textContent = profile.best_for;
       examples.innerHTML = "";

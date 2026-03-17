@@ -1,48 +1,17 @@
-<section class="panel today-panel">
-  <div class="section-head">
-    <div>
-      <p class="eyebrow">Today</p>
-      <h2>{{ feed.summary }}</h2>
-    </div>
-    <button
-      hx-get="/fragments/home-feed"
-      hx-target="#home-feed"
-      hx-indicator="#home-loading"
-    >刷新主页候选</button>
-  </div>
-
-  <div class="signal-row">
-    {% for signal in feed.signals %}
-      <span class="signal-chip">{{ signal }}</span>
+{% if site_feed.errors %}
+  <div class="error-stack">
+    {% for error in site_feed.errors %}
+      <div class="error-pill">{{ site_profiles[site].label }} 暂时不可用：{{ error }}</div>
     {% endfor %}
   </div>
+{% endif %}
 
-  <div class="site-pill-cluster">
-    {% for site in feed.site_order %}
-      <button
-        type="button"
-        class="site-chip-button"
-        hx-get="/fragments/home-site-panel?site={{ site }}&refresh_token={{ feed.refresh_token }}"
-        hx-target="#home-site-panel"
-      >{{ site_profiles[site].label }}</button>
-    {% endfor %}
+{% if site_feed.results %}
+  <div class="result-grid result-grid-home">
+    {% include "partials/result_cards.html" %}
   </div>
-
-  <div id="mixed-feed-empty" class="empty-state">
-    <p>正在按站点分批生成候选，先到的结果会先出现。</p>
+{% else %}
+  <div class="empty-state">
+    <p>{{ site_profiles[site].label }} 当前没有可展示的候选结果。</p>
   </div>
-
-  <div id="mixed-feed-grid" class="feed-grid"></div>
-
-  <div class="feed-loaders" aria-hidden="true">
-    {% for site in feed.site_order %}
-      <div
-        class="feed-loader"
-        hx-get="/fragments/home-feed-site-cards?site={{ site }}&refresh_token={{ feed.refresh_token }}"
-        hx-trigger="load"
-        hx-target="#mixed-feed-grid"
-        hx-swap="beforeend"
-      ></div>
-    {% endfor %}
-  </div>
-</section>
+{% endif %}

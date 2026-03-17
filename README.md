@@ -16,6 +16,21 @@ uv sync
 uv run uvicorn app.main:app --reload
 ```
 
+或使用 `conda + python`：
+
+```bash
+conda create -n charaseed python=3.11 -y
+conda activate charaseed
+pip install -e ".[dev]"
+python -m uvicorn app.main:app --reload
+```
+
+如果本地通过 `all_proxy=socks5://...` 使用 SOCKS 代理，还需要补装：
+
+```bash
+pip install "httpx[socks]"
+```
+
 默认地址：
 `http://127.0.0.1:8000`
 

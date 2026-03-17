@@ -33,7 +33,7 @@ from app.services.catalog import (
     status_label,
     split_tokens,
 )
-from app.services.feed import build_feed_shell, build_site_feed
+from app.services.feed import build_site_feed
 from app.services.search import search_service, site_profiles
 from app.site_profiles import SITE_ORDER, sites_for_mode
 
@@ -111,69 +111,31 @@ def home_page(request: Request) -> HTMLResponse:
             "request": request,
             "site_profiles": site_profiles,
             "site_order": SITE_ORDER,
+            "selected_site": SITE_ORDER[0],
         },
     )
 
 
 @app.get("/fragments/home-feed", response_class=HTMLResponse)
-def home_feed_fragment(
+async def home_feed_fragment(
     request: Request,
-    refresh_token: str | None = Query(default=None),
-    session: Session = Depends(get_session),
-) -> HTMLResponse:
-    owner = default_user(session)
-    feed = build_feed_shell(session, owner.id, refresh_token=refresh_token)
-    return templates.TemplateResponse(
-        "partials/home_feed.html",
-        {
-            "request": request,
-            "feed": feed,
-            "site_profiles": site_profiles,
-        },
-    )
-
-
-@app.get("/fragments/home-feed-site-cards", response_class=HTMLResponse)
-async def home_feed_site_cards_fragment(
-    request: Request,
-    site: str = Query(...),
-    refresh_token: str = Query(...),
-    session: Session = Depends(get_session),
-) -> HTMLResponse:
-    if site not in SITE_ORDER:
-        raise HTTPException(status_code=404, detail="Site not found")
-    owner = default_user(session)
-    site_feed = await build_site_feed(session, owner.id, site, refresh_token=refresh_token, limit=4)
-    return templates.TemplateResponse(
-        "partials/home_feed_cards.html",
-        {
-            "request": request,
-            "results": site_feed["results"],
-            "site_profiles": site_profiles,
-        },
-    )
-
-
-@app.get("/fragments/home-site-panel", response_class=HTMLResponse)
-async def home_site_panel_fragment(
-    request: Request,
-    site: str = Query(...),
+    site: str = Query(default=SITE_ORDER[0]),
     refresh_token: str | None = Query(default=None),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
     if site not in SITE_ORDER:
-        raise HTTPException(status_code=404, detail="Site not found")
+        raise HTTPException(status_code=400, detail="Invalid site")
     owner = default_user(session)
     site_feed = await build_site_feed(
         session,
         owner.id,
         site,
         refresh_token=refresh_token or str(time.time_ns()),
-        limit=10,
+        limit=12,
         force_refresh=True,
     )
     return templates.TemplateResponse(
-        "partials/home_site_panel.html",
+        "partials/home_feed.html",
         {
             "request": request,
             "site": site,
