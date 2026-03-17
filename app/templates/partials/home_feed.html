@@ -16,6 +16,10 @@
 {% endif %}
 
 {% if results %}
+  <div class="result-meta">
+    <span class="tag type-chip">{{ site_profiles[site].label }}</span>
+    <span class="muted">当前陈列 {{ results|length }} 个候选结果</span>
+  </div>
   <div class="result-grid result-grid-home">
     {% include "partials/result_cards.html" %}
   </div>

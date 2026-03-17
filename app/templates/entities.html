@@ -3,6 +3,14 @@
 {% block title %}主题页 | CharaSeed{% endblock %}
 
 {% block content %}
+<section class="page-hero panel panel-ornate">
+  <div class="page-title-stack">
+    <p class="eyebrow">Archive Themes</p>
+    <h1>角色、作品与主题页会把你的收藏关系慢慢整理成可浏览的归档网络。</h1>
+    <p class="page-lede">这里不是公共百科，而是你自己的角色与作品策展面板。随着收藏增多，主题页会越来越像一套私人世界观目录。</p>
+  </div>
+</section>
+
 <section class="panel">
   <div class="section-head">
     <div>
@@ -23,7 +31,7 @@
               {% else %}
                 <div class="placeholder-media short">No cover</div>
               {% endif %}
-              <div>
+              <div class="entity-card-copy">
                 <strong>{{ entry.entity.name }}</strong>
                 <p>{{ entry.count }} 个关联收藏</p>
               </div>

@@ -3,20 +3,32 @@
 {% block title %}收藏库 | CharaSeed{% endblock %}
 
 {% block content %}
-<section class="stats-grid">
-  <div class="stat-card"><span>总收藏</span><strong>{{ stats.total }}</strong></div>
-  <div class="stat-card"><span>图片</span><strong>{{ stats.images }}</strong></div>
-  <div class="stat-card"><span>手办</span><strong>{{ stats.figures }}</strong></div>
-  <div class="stat-card"><span>模型</span><strong>{{ stats.models }}</strong></div>
-  <div class="stat-card"><span>动画</span><strong>{{ stats.anime }}</strong></div>
-  <div class="stat-card"><span>条目</span><strong>{{ stats.entries }}</strong></div>
+<section class="page-hero library-hero panel panel-ornate">
+  <div class="page-title-stack">
+    <p class="eyebrow">Collection Cabinet</p>
+    <h1>已经归档进来的内容，不只是列表，而是一整面私人收藏墙。</h1>
+    <p class="page-lede">在这里整理状态、评分、角色归属和作品关系。搜索得到的是候选，收藏库保存的是你真正决定留下的东西。</p>
+    <div class="hero-actions">
+      <a class="button-secondary" href="/discover">继续发现</a>
+      <a class="button-secondary" href="/items/new">手动补录</a>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card"><span>总收藏</span><strong>{{ stats.total }}</strong></div>
+    <div class="stat-card"><span>图片</span><strong>{{ stats.images }}</strong></div>
+    <div class="stat-card"><span>手办</span><strong>{{ stats.figures }}</strong></div>
+    <div class="stat-card"><span>模型</span><strong>{{ stats.models }}</strong></div>
+    <div class="stat-card"><span>动画</span><strong>{{ stats.anime }}</strong></div>
+    <div class="stat-card"><span>条目</span><strong>{{ stats.entries }}</strong></div>
+  </div>
 </section>
 
 <section class="panel library-layout">
   <aside class="sidebar-filters">
     <div class="section-head">
       <div>
-        <p class="eyebrow">Library</p>
+        <p class="eyebrow">Curation Controls</p>
         <h2>收藏筛选</h2>
       </div>
     </div>
@@ -95,7 +107,7 @@
   <div class="library-content">
     <div class="section-head">
       <div>
-        <p class="eyebrow">Collected</p>
+        <p class="eyebrow">Collected Works</p>
         <h2>我的收藏项</h2>
       </div>
       <button class="button-secondary" type="button" hx-get="/fragments/manual-item-form" hx-target="#modal-panel">手动补录</button>

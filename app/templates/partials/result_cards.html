@@ -8,20 +8,28 @@
     {% set tag_summary = result.subtitle or "" %}
   {% endif %}
   <article class="result-card">
-    <div class="result-media">
+    <a class="result-media" href="{{ result.source_url or result.original_url or '#' }}" target="_blank" rel="noreferrer">
       {% if result.preview_url %}
         <img src="{{ result.preview_url }}" alt="{{ result.title }}" loading="lazy">
       {% else %}
         <div class="placeholder-media">No preview</div>
       {% endif %}
       <span class="source-chip">{{ site_profiles[result.source_site].label }}</span>
-    </div>
+    </a>
     <div class="result-body">
       <div class="result-copy">
         <div class="card-kicker-row">
           <span class="tag type-chip">{{ item_type_label(result.item_type) }}</span>
+          {% if character_names %}
+            <span class="result-kicker">{{ character_names }}</span>
+          {% elif work_names %}
+            <span class="result-kicker">{{ work_names }}</span>
+          {% endif %}
         </div>
         <h3 class="clamp-2">{{ result.title }}</h3>
+        {% if artist_names or maker_names %}
+          <p class="result-subline clamp-2">{{ artist_names or maker_names }}</p>
+        {% endif %}
         {% if tag_summary %}
           <p class="result-tags clamp-2">{{ tag_summary }}</p>
         {% endif %}

@@ -1,10 +1,15 @@
 <section class="result-stack">
-  {% if query %}
-    <div class="result-meta">
-      <span class="tag type-chip">{{ site_profile.label }}</span>
+  <div class="result-meta">
+    <span class="tag type-chip">{{ site_profile.label }}</span>
+    {% if query %}
       <span class="muted">关键词：{{ query }}</span>
-    </div>
-  {% endif %}
+    {% else %}
+      <span class="muted">先输入关键词，再从当前站点语境拉取结果。</span>
+    {% endif %}
+    {% if results %}
+      <span class="muted">共 {{ results|length }} 条结果</span>
+    {% endif %}
+  </div>
 
   {% if errors %}
     <div class="error-stack">

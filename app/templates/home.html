@@ -3,30 +3,64 @@
 {% block title %}主页 | CharaSeed{% endblock %}
 
 {% block content %}
-<section class="home-toolbar panel home-toolbar-panel">
-  <div class="group-switcher" id="home-group-switcher">
-    {% for group in source_groups %}
-      <button
-        type="button"
-        class="group-switch {% if group.id == selected_group %}is-active{% endif %}"
-        data-group="{{ group.id }}"
-      >{{ group.home_label }}</button>
-    {% endfor %}
+<section class="page-hero home-hero-stage panel panel-ornate">
+  <div class="page-title-stack">
+    <p class="eyebrow">Today Exhibition</p>
+    <h1>把今天值得留下来的角色、图像与手办候选，先陈列出来。</h1>
+    <p class="page-lede">CharaSeed 的首页不是仪表盘，而是你的私人展厅入口。先逛、再点开、再决定是否归档收藏。</p>
+    <div class="hero-actions">
+      <button type="button" id="home-refresh-button">刷新主页候选</button>
+      <a class="button-secondary" href="/discover">进入搜索页</a>
+    </div>
   </div>
-  <div class="hero-actions">
-    <button type="button" id="home-refresh-button">刷新主页候选</button>
-    <a class="button-secondary" href="/discover">进入搜索页</a>
+
+  <aside class="page-aside collector-note">
+    <p class="collector-note-label">展厅分区</p>
+    <div class="site-pill-cluster">
+      {% for group in source_groups %}
+        <span class="signal-chip">{{ group.home_label }}</span>
+      {% endfor %}
+    </div>
+    <p class="muted">视觉优先的候选流会优先展示更适合浏览与快速判断的内容，站点切换则像切到不同展柜分区。</p>
+  </aside>
+</section>
+
+<section class="panel home-toolbar-panel">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">Curated Sources</p>
+      <h2>切换今天想逛的展区</h2>
+    </div>
   </div>
-  <div class="site-switcher home-site-switcher" id="home-site-switcher"></div>
+  <div class="home-toolbar">
+    <div class="group-switcher" id="home-group-switcher">
+      {% for group in source_groups %}
+        <button
+          type="button"
+          class="group-switch {% if group.id == selected_group %}is-active{% endif %}"
+          data-group="{{ group.id }}"
+        >{{ group.home_label }}</button>
+      {% endfor %}
+    </div>
+    <div class="site-switcher home-site-switcher" id="home-site-switcher"></div>
+  </div>
 </section>
 
 <div id="home-loading" class="loading-note htmx-indicator">正在生成今日候选流...</div>
 
-<section id="home-feed" class="home-feed-shell" data-site="{{ selected_site }}" data-limit="{{ current_limit }}"></section>
+<section class="panel panel-quiet">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">Featured Feed</p>
+      <h2>今日候选墙</h2>
+    </div>
+  </div>
+  <section id="home-feed" class="home-feed-shell" data-site="{{ selected_site }}" data-limit="{{ current_limit }}"></section>
+</section>
 
 <section class="panel result-limit-panel">
   <div class="result-limit-row">
-    <span class="muted">每页显示</span>
+    <span class="muted">单次陈列数量</span>
     <div class="site-switcher" id="home-limit-switcher">
       {% for limit in result_limits %}
         <button

@@ -1,9 +1,10 @@
 <div class="modal-card">
-  <button type="button" class="modal-close" onclick="closeModal()">×</button>
+  <button type="button" class="modal-close" onclick="closeModal()" aria-label="关闭">×</button>
   <div class="section-head">
     <div>
       <p class="eyebrow">Collect</p>
       <h2>收藏并补充整理信息</h2>
+      <p class="muted modal-lede">先确定它要以什么身份进入收藏库，再补充角色、作品和标签，让后续归档更有用。</p>
     </div>
   </div>
   <form class="edit-form" hx-post="/items/create">

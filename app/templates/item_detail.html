@@ -3,6 +3,21 @@
 {% block title %}{{ item.title }} | CharaSeed{% endblock %}
 
 {% block content %}
+<section class="page-hero panel panel-ornate item-page-hero">
+  <div class="page-title-stack">
+    <p class="eyebrow">Collected Item</p>
+    <h1>{{ item.title }}</h1>
+    <p class="page-lede">{{ item.description or "在这里补充整理信息、调整状态，并让这一条收藏真正进入你的个人归档系统。" }}</p>
+    <div class="site-pill-cluster">
+      <span class="signal-chip">{{ item_type_label(item.item_type) }}</span>
+      <span class="signal-chip">{{ item.source_site or "manual" }}</span>
+      {% if item.rating %}
+        <span class="signal-chip">{{ item.rating }}/5</span>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
 <section class="detail-layout">
   <article class="panel">
     <div class="detail-media">
@@ -28,7 +43,7 @@
     <div class="section-head">
       <div>
         <p class="eyebrow">{{ item_type_label(item.item_type) }}</p>
-        <h1>{{ item.title }}</h1>
+        <h2>整理这条收藏</h2>
       </div>
       <form method="post" action="/items/{{ item.id }}/delete" onsubmit="return confirm('确认删除这个收藏项？');">
         <button type="submit" class="button-danger">删除收藏</button>

@@ -3,11 +3,15 @@
 {% block title %}{{ entity.name }} | CharaSeed{% endblock %}
 
 {% block content %}
-<section class="detail-hero">
+<section class="detail-hero panel panel-ornate">
   <div class="detail-hero-copy">
     <p class="eyebrow">{{ entity.entity_type }}</p>
     <h1>{{ entity.name }}</h1>
     <p class="hero-copy">{{ entity.description or "这个主题页用于聚合你收藏库中与它相关的所有条目。" }}</p>
+    <div class="site-pill-cluster">
+      <span class="signal-chip">{{ items|length }} 个关联收藏</span>
+      <a class="signal-chip signal-chip-button" href="/library">回到收藏库</a>
+    </div>
   </div>
   {% if entity.cover_image_url %}
     <div class="detail-cover">

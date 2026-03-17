@@ -3,7 +3,30 @@
 {% block title %}发现 | CharaSeed{% endblock %}
 
 {% block content %}
+<section class="page-hero discover-hero panel panel-ornate">
+  <div class="page-title-stack">
+    <p class="eyebrow">Search Gallery</p>
+    <h1>用更像画廊导览的方式，搜索角色、作品、标签与手办。</h1>
+    <p class="page-lede">把检索过程从“工具查询”变成“有方向的浏览”。先选站点语境，再决定要不要预览和归档。</p>
+  </div>
+  <aside class="page-aside collector-note">
+    <p class="collector-note-label">发现原则</p>
+    <div class="site-pill-cluster">
+      <span class="signal-chip">站点语义不同</span>
+      <span class="signal-chip">结果先看图</span>
+      <span class="signal-chip">预览后归档</span>
+    </div>
+    <p class="muted">搜索页保留效率，但视觉上会更像检索画廊，不会退回后台式结果列表。</p>
+  </aside>
+</section>
+
 <section class="panel">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">Query Console</p>
+      <h2>选择站点语境并开始检索</h2>
+    </div>
+  </div>
   <form
     class="search-form search-form-quiet"
     hx-get="/fragments/search-results"
@@ -59,7 +82,7 @@
 
 <section class="panel result-limit-panel">
   <div class="result-limit-row">
-    <span class="muted">每页显示</span>
+    <span class="muted">每次取回结果数</span>
     <div class="site-switcher" id="discover-limit-switcher">
       {% for limit in result_limits %}
         <button

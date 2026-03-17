@@ -1,5 +1,5 @@
 <div class="modal-card">
-  <button type="button" class="modal-close" onclick="closeModal()">×</button>
+  <button type="button" class="modal-close" onclick="closeModal()" aria-label="关闭">×</button>
   <div class="modal-grid">
     <div class="preview-pane">
       {% if result.original_url and result.item_type == "image" %}
@@ -14,6 +14,7 @@
       <p class="eyebrow">{{ result.source_site }}</p>
       <h2>{{ result.title }}</h2>
       <p class="muted">{{ result.subtitle or result.item_type }}</p>
+      <p class="muted small modal-lede">先确认图像和来源是否值得保留，再决定是否归档进收藏库。</p>
       {% if result.tags_text %}
         <div class="tag-row">
           {% for tag in result.tags_text.split(", ")[:10] %}

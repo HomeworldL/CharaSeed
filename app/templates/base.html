@@ -6,21 +6,23 @@
   <title>{% block title %}CharaSeed{% endblock %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', path='/styles.css') }}">
   <script src="https://unpkg.com/htmx.org@2.0.4"></script>
 </head>
 <body>
+  <div class="ambient-glow ambient-glow-left" aria-hidden="true"></div>
+  <div class="ambient-glow ambient-glow-right" aria-hidden="true"></div>
   <div class="page-shell">
-    <header class="site-header">
+    <header class="site-header panel panel-ornate">
       <a class="brand" href="/home">
         <span class="brand-mark">CS</span>
         <span>
           <strong>CharaSeed</strong>
-          <small>Personal anime collection hub</small>
+          <small>Personal anime collection showroom</small>
         </span>
       </a>
-      <nav class="top-nav">
+      <nav class="top-nav" aria-label="Primary">
         <a href="/home">主页</a>
         <a href="/discover">发现</a>
         <a href="/info">资讯</a>
@@ -35,7 +37,7 @@
   </div>
 
   <div id="modal" class="modal" onclick="closeModalIfBackdrop(event)">
-    <div id="modal-panel" class="modal-panel"></div>
+    <div id="modal-panel" class="modal-panel" role="dialog" aria-modal="true"></div>
   </div>
 
   <script>
