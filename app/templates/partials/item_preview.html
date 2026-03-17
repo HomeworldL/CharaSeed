@@ -1,0 +1,42 @@
+<div class="modal-card">
+  <button type="button" class="modal-close" onclick="closeModal()">×</button>
+  <div class="modal-grid">
+    <div class="preview-pane">
+      {% if result.original_url and result.item_type == "image" %}
+        <img src="{{ result.original_url }}" alt="{{ result.title }}">
+      {% elif result.preview_url %}
+        <img src="{{ result.preview_url }}" alt="{{ result.title }}">
+      {% else %}
+        <div class="placeholder-media tall">No preview</div>
+      {% endif %}
+    </div>
+    <div class="modal-meta">
+      <p class="eyebrow">{{ result.source_site }}</p>
+      <h2>{{ result.title }}</h2>
+      <p class="muted">{{ result.subtitle or result.item_type }}</p>
+      {% if result.tags_text %}
+        <div class="tag-row">
+          {% for tag in result.tags_text.split(", ")[:10] %}
+            <span class="tag">{{ tag }}</span>
+          {% endfor %}
+        </div>
+      {% endif %}
+      <div class="stack-actions">
+        <a class="button-secondary" href="{{ result.source_url }}" target="_blank" rel="noreferrer">查看来源</a>
+        <form hx-get="/fragments/collect-form" hx-target="#modal-panel">
+          <input type="hidden" name="source_site" value="{{ result.source_site }}">
+          <input type="hidden" name="external_id" value="{{ result.external_id }}">
+          <input type="hidden" name="item_type" value="{{ result.item_type }}">
+          <input type="hidden" name="title" value="{{ result.title }}">
+          <input type="hidden" name="subtitle" value="{{ result.subtitle or '' }}">
+          <input type="hidden" name="source_url" value="{{ result.source_url }}">
+          <input type="hidden" name="preview_url" value="{{ result.preview_url or '' }}">
+          <input type="hidden" name="original_url" value="{{ result.original_url or '' }}">
+          <input type="hidden" name="tags_text" value="{{ result.tags_text }}">
+          <button type="submit">收藏并整理</button>
+        </form>
+      </div>
+      <p class="muted small">第一版不会下载原图。收藏后会保存来源、预览图和整理信息，你可以在详情页继续跳回原站或按需下载。</p>
+    </div>
+  </div>
+</div>

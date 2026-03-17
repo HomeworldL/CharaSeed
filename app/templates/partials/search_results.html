@@ -1,0 +1,75 @@
+<section class="panel panel-soft">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">Results</p>
+      <h2>搜索结果</h2>
+    </div>
+    {% if query %}
+      <span class="muted">关键词：{{ query }}</span>
+    {% endif %}
+  </div>
+
+  {% if errors %}
+    <div class="error-stack">
+      {% for site, error in errors.items() %}
+        <div class="error-pill">{{ site }} 暂时不可用：{{ error }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if results %}
+    <div class="result-grid">
+      {% for result in results %}
+        <article class="result-card">
+          <div class="result-media">
+            {% if result.preview_url %}
+              <img src="{{ result.preview_url }}" alt="{{ result.title }}">
+            {% else %}
+              <div class="placeholder-media">No preview</div>
+            {% endif %}
+            <span class="source-chip">{{ result.source_site }}</span>
+          </div>
+          <div class="result-body">
+            <h3>{{ result.title }}</h3>
+            <p class="muted">{{ result.subtitle or result.item_type }}</p>
+            <div class="tag-row">
+              {% for tag in result.tags[:5] %}
+                <span class="tag">{{ tag }}</span>
+              {% endfor %}
+            </div>
+            <div class="card-actions">
+              <form hx-get="/fragments/item-preview" hx-target="#modal-panel">
+                <input type="hidden" name="source_site" value="{{ result.source_site }}">
+                <input type="hidden" name="external_id" value="{{ result.external_id }}">
+                <input type="hidden" name="item_type" value="{{ result.item_type }}">
+                <input type="hidden" name="title" value="{{ result.title }}">
+                <input type="hidden" name="subtitle" value="{{ result.subtitle or '' }}">
+                <input type="hidden" name="source_url" value="{{ result.source_url }}">
+                <input type="hidden" name="preview_url" value="{{ result.preview_url or '' }}">
+                <input type="hidden" name="original_url" value="{{ result.original_url or '' }}">
+                <input type="hidden" name="tags_text" value="{{ result.tags | join(', ') }}">
+                <button type="submit" class="button-secondary">预览</button>
+              </form>
+              <form hx-get="/fragments/collect-form" hx-target="#modal-panel">
+                <input type="hidden" name="source_site" value="{{ result.source_site }}">
+                <input type="hidden" name="external_id" value="{{ result.external_id }}">
+                <input type="hidden" name="item_type" value="{{ result.item_type }}">
+                <input type="hidden" name="title" value="{{ result.title }}">
+                <input type="hidden" name="subtitle" value="{{ result.subtitle or '' }}">
+                <input type="hidden" name="source_url" value="{{ result.source_url }}">
+                <input type="hidden" name="preview_url" value="{{ result.preview_url or '' }}">
+                <input type="hidden" name="original_url" value="{{ result.original_url or '' }}">
+                <input type="hidden" name="tags_text" value="{{ result.tags | join(', ') }}">
+                <button type="submit">收藏</button>
+              </form>
+            </div>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <p>先输入关键词开始搜索。第一版会按站点逐个聚合结果，部分站点失败不会阻塞整页。</p>
+    </div>
+  {% endif %}
+</section>

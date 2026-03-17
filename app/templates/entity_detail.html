@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}{{ entity.name }} | CharaSeed{% endblock %}
+
+{% block content %}
+<section class="detail-hero">
+  <div class="detail-hero-copy">
+    <p class="eyebrow">{{ entity.entity_type }}</p>
+    <h1>{{ entity.name }}</h1>
+    <p class="hero-copy">{{ entity.description or "这个主题页用于聚合你收藏库中与它相关的所有条目。" }}</p>
+  </div>
+  {% if entity.cover_image_url %}
+    <div class="detail-cover">
+      <img src="{{ entity.cover_image_url }}" alt="{{ entity.name }}">
+    </div>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">Related Items</p>
+      <h2>关联收藏</h2>
+    </div>
+  </div>
+  {% if items %}
+    <div class="result-grid">
+      {% for item in items %}
+        <article class="result-card">
+          <a class="result-media" href="/items/{{ item.id }}">
+            {% if item.preview_url %}
+              <img src="{{ item.preview_url }}" alt="{{ item.title }}">
+            {% else %}
+              <div class="placeholder-media">No preview</div>
+            {% endif %}
+          </a>
+          <div class="result-body">
+            <h3><a href="/items/{{ item.id }}">{{ item.title }}</a></h3>
+            <p class="muted">{{ item.item_type }} · {{ item.source_site }}</p>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <p>这个主题页还没有关联收藏项。</p>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

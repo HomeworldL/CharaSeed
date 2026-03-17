@@ -1,0 +1,62 @@
+<div class="modal-card">
+  <button type="button" class="modal-close" onclick="closeModal()">×</button>
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">Collect</p>
+      <h2>收藏并补充整理信息</h2>
+    </div>
+  </div>
+  <form class="edit-form" hx-post="/items/create">
+    <input type="hidden" name="source_site" value="{{ payload.source_site }}">
+    <input type="hidden" name="source_id" value="{{ payload.source_id }}">
+    <input type="hidden" name="item_type" value="{{ payload.item_type }}">
+    <input type="hidden" name="source_url" value="{{ payload.source_url }}">
+    <input type="hidden" name="preview_url" value="{{ payload.preview_url or '' }}">
+    <input type="hidden" name="original_url" value="{{ payload.original_url or '' }}">
+    <input type="hidden" name="subtitle" value="{{ payload.subtitle or '' }}">
+    <div class="field">
+      <label>标题</label>
+      <input type="text" name="title" value="{{ payload.title }}" required>
+    </div>
+    <div class="field-grid">
+      <div class="field">
+        <label>状态</label>
+        <select name="status">
+          <option value="collected">已收藏</option>
+          <option value="wishlist">想买</option>
+          <option value="pending">待整理</option>
+          <option value="archived">已归档</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>评分</label>
+        <select name="rating">
+          <option value="">未评分</option>
+          {% for rating in range(5, 0, -1) %}
+            <option value="{{ rating }}">{{ rating }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>角色</label>
+      <input type="text" name="character_names" placeholder="逗号分隔，例如：Asuna, 初音未来">
+    </div>
+    <div class="field">
+      <label>作品</label>
+      <input type="text" name="work_names" placeholder="逗号分隔，例如：Sword Art Online">
+    </div>
+    <div class="field">
+      <label>标签</label>
+      <input type="text" name="tags_text" value="{{ payload.tags_text }}" placeholder="逗号分隔标签">
+    </div>
+    <div class="field">
+      <label>备注</label>
+      <textarea name="description" rows="4" placeholder="短备注、购买原因或整理说明"></textarea>
+    </div>
+    <div class="inline-cta">
+      <button type="submit">加入收藏库</button>
+      <button type="button" class="button-secondary" onclick="closeModal()">取消</button>
+    </div>
+  </form>
+</div>

@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}新增条目 | CharaSeed{% endblock %}
+
+{% block content %}
+<section class="panel narrow-panel">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">Manual Entry</p>
+      <h1>手动补录收藏项</h1>
+    </div>
+  </div>
+  <form method="post" action="/items/create" class="edit-form">
+    <input type="hidden" name="source_site" value="manual">
+    <div class="field-grid">
+      <div class="field">
+        <label>标题</label>
+        <input type="text" name="title" required>
+      </div>
+      <div class="field">
+        <label>类型</label>
+        <select name="item_type">
+          <option value="image">image</option>
+          <option value="figure">figure</option>
+          <option value="entry">entry</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>副标题</label>
+      <input type="text" name="subtitle">
+    </div>
+    <div class="field">
+      <label>来源链接</label>
+      <input type="url" name="source_url">
+    </div>
+    <div class="field-grid">
+      <div class="field">
+        <label>预览图链接</label>
+        <input type="url" name="preview_url">
+      </div>
+      <div class="field">
+        <label>原图 / 原始链接</label>
+        <input type="url" name="original_url">
+      </div>
+    </div>
+    <div class="field-grid">
+      <div class="field">
+        <label>状态</label>
+        <select name="status">
+          <option value="collected">已收藏</option>
+          <option value="wishlist">想买</option>
+          <option value="pending">待整理</option>
+          <option value="archived">已归档</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>评分</label>
+        <select name="rating">
+          <option value="">未评分</option>
+          {% for rating in range(5, 0, -1) %}
+            <option value="{{ rating }}">{{ rating }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>角色</label>
+      <input type="text" name="character_names">
+    </div>
+    <div class="field">
+      <label>作品</label>
+      <input type="text" name="work_names">
+    </div>
+    <div class="field">
+      <label>标签</label>
+      <input type="text" name="tags_text">
+    </div>
+    <div class="field">
+      <label>描述</label>
+      <textarea name="description" rows="6"></textarea>
+    </div>
+    <button type="submit">保存到收藏库</button>
+  </form>
+</section>
+{% endblock %}

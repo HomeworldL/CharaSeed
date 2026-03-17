@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}{{ item.title }} | CharaSeed{% endblock %}
+
+{% block content %}
+<section class="detail-layout">
+  <article class="panel">
+    <div class="detail-media">
+      {% if item.preview_url %}
+        <img src="{{ item.preview_url }}" alt="{{ item.title }}">
+      {% else %}
+        <div class="placeholder-media tall">No preview</div>
+      {% endif %}
+    </div>
+    <div class="source-actions">
+      {% if item.source_url %}
+        <a class="button-secondary" href="{{ item.source_url }}" target="_blank" rel="noreferrer">打开来源页面</a>
+      {% endif %}
+      {% if item.original_url %}
+        <a class="button-secondary" href="{{ item.original_url }}" target="_blank" rel="noreferrer">打开原图 / 原链接</a>
+      {% endif %}
+    </div>
+  </article>
+
+  <article class="panel">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">{{ item.item_type }}</p>
+        <h1>{{ item.title }}</h1>
+      </div>
+    </div>
+    <form method="post" action="/items/{{ item.id }}/edit" class="edit-form">
+      <div class="field">
+        <label>标题</label>
+        <input type="text" name="title" value="{{ item.title }}" required>
+      </div>
+      <div class="field">
+        <label>副标题</label>
+        <input type="text" name="subtitle" value="{{ item.subtitle or '' }}">
+      </div>
+      <div class="field-grid">
+        <div class="field">
+          <label>类型</label>
+          <select name="item_type">
+            {% for option in ["image", "figure", "entry"] %}
+              <option value="{{ option }}" {% if item.item_type == option %}selected{% endif %}>{{ option }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>状态</label>
+          <select name="status">
+            {% for option in ["collected", "wishlist", "pending", "archived"] %}
+              <option value="{{ option }}" {% if item.status == option %}selected{% endif %}>{{ option }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label>评分</label>
+          <select name="rating">
+            <option value="">未评分</option>
+            {% for rating in range(5, 0, -1) %}
+              <option value="{{ rating }}" {% if item.rating == rating %}selected{% endif %}>{{ rating }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>角色</label>
+        <input type="text" name="character_names" value="{{ character_names }}">
+      </div>
+      <div class="field">
+        <label>作品</label>
+        <input type="text" name="work_names" value="{{ work_names }}">
+      </div>
+      <div class="field">
+        <label>原创主题</label>
+        <input type="text" name="original_names" value="{{ original_names }}">
+      </div>
+      <div class="field">
+        <label>作者</label>
+        <input type="text" name="artist_names" value="{{ artist_names }}">
+      </div>
+      <div class="field">
+        <label>标签</label>
+        <input type="text" name="tags_text" value="{{ tags_text }}">
+      </div>
+      <div class="field">
+        <label>来源页</label>
+        <input type="url" name="source_url" value="{{ item.source_url or '' }}">
+      </div>
+      <div class="field-grid">
+        <div class="field">
+          <label>预览图链接</label>
+          <input type="url" name="preview_url" value="{{ item.preview_url or '' }}">
+        </div>
+        <div class="field">
+          <label>原图 / 原始链接</label>
+          <input type="url" name="original_url" value="{{ item.original_url or '' }}">
+        </div>
+      </div>
+      <div class="field">
+        <label>描述</label>
+        <textarea name="description" rows="5">{{ item.description or '' }}</textarea>
+      </div>
+      <input type="hidden" name="source_site" value="{{ item.source_site or 'manual' }}">
+      <input type="hidden" name="source_id" value="{{ item.source_id or '' }}">
+      <button type="submit">保存修改</button>
+    </form>
+  </article>
+</section>
+
+<section class="panel">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">Related</p>
+      <h2>相关项</h2>
+    </div>
+  </div>
+  {% if related %}
+    <div class="result-grid">
+      {% for entry in related %}
+        <article class="result-card">
+          <a class="result-media" href="/items/{{ entry.id }}">
+            {% if entry.preview_url %}
+              <img src="{{ entry.preview_url }}" alt="{{ entry.title }}">
+            {% else %}
+              <div class="placeholder-media">No preview</div>
+            {% endif %}
+          </a>
+          <div class="result-body">
+            <h3><a href="/items/{{ entry.id }}">{{ entry.title }}</a></h3>
+            <p class="muted">{{ entry.item_type }}</p>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <p>还没有可展示的相关项。随着你给角色、作品和标签打得更多，这里会更有用。</p>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

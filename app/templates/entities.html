@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}主题页 | CharaSeed{% endblock %}
+
+{% block content %}
+<section class="panel">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">Entities</p>
+      <h1>角色、作品与主题归档</h1>
+    </div>
+  </div>
+
+  {% if groups %}
+    {% for entity_type, entries in groups.items() %}
+      <section class="entity-group">
+        <h2>{{ entity_type }}</h2>
+        <div class="entity-grid">
+          {% for entry in entries %}
+            <a class="entity-card" href="/entities/{{ entry.entity.id }}">
+              {% if entry.entity.cover_image_url %}
+                <img src="{{ entry.entity.cover_image_url }}" alt="{{ entry.entity.name }}">
+              {% else %}
+                <div class="placeholder-media short">No cover</div>
+              {% endif %}
+              <div>
+                <strong>{{ entry.entity.name }}</strong>
+                <p>{{ entry.count }} 个关联收藏</p>
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      </section>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">
+      <p>还没有主题页。收藏时填写角色或作品后，这里会自动长出主题卡片。</p>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

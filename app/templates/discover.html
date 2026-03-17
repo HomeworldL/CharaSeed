@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}发现 | CharaSeed{% endblock %}
+
+{% block content %}
+<section class="hero-card">
+  <div>
+    <p class="eyebrow">Discover</p>
+    <h1>把分散在不同站点的角色图、条目和手办候选，收进一个私人的收藏册。</h1>
+    <p class="hero-copy">第一版接入 Danbooru、Safebooru、Zerochan 和 Hpoi。搜索、预览、收藏和主题归档都在同一个界面完成。</p>
+  </div>
+  <div class="hero-badge">
+    <span>真实站点搜索</span>
+    <span>引用式收藏</span>
+    <span>角色 / 作品归档</span>
+  </div>
+</section>
+
+<section class="panel">
+  <form
+    class="search-form"
+    hx-get="/fragments/search-results"
+    hx-target="#search-results"
+    hx-indicator="#search-loading"
+  >
+    <div class="search-line">
+      <input type="text" name="q" value="{{ query }}" placeholder="搜索角色、作品、标签或手办名，例如：初音未来、asuna、genshin impact" required>
+      <button type="submit">开始搜索</button>
+    </div>
+
+    <div class="filter-row">
+      <div class="filter-group">
+        <span>站点</span>
+        {% for site in ["danbooru", "safebooru", "zerochan", "hpoi"] %}
+          <label><input type="checkbox" name="sites" value="{{ site }}" checked> {{ site }}</label>
+        {% endfor %}
+      </div>
+      <div class="filter-group">
+        <span>类型</span>
+        {% for item_type in ["image", "figure", "entry"] %}
+          <label><input type="checkbox" name="item_types" value="{{ item_type }}"> {{ item_type }}</label>
+        {% endfor %}
+      </div>
+      <div id="search-loading" class="loading-note htmx-indicator">正在向多个源站拉取结果...</div>
+    </div>
+  </form>
+</section>
+
+<section id="search-results">
+  {% include "partials/search_results.html" %}
+</section>
+{% endblock %}

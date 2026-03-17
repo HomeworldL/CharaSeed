@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}CharaSeed{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', path='/styles.css') }}">
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+</head>
+<body>
+  <div class="page-shell">
+    <header class="site-header">
+      <a class="brand" href="/discover">
+        <span class="brand-mark">CS</span>
+        <span>
+          <strong>CharaSeed</strong>
+          <small>Personal anime collection hub</small>
+        </span>
+      </a>
+      <nav class="top-nav">
+        <a href="/discover">发现</a>
+        <a href="/library">收藏库</a>
+        <a href="/entities">主题</a>
+        <a href="/items/new">新增条目</a>
+      </nav>
+    </header>
+
+    <main class="content-shell">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <div id="modal" class="modal" onclick="closeModalIfBackdrop(event)">
+    <div id="modal-panel" class="modal-panel"></div>
+  </div>
+
+  <script>
+    function openModal() {
+      document.getElementById("modal").classList.add("is-open");
+    }
+
+    function closeModal() {
+      document.getElementById("modal").classList.remove("is-open");
+      document.getElementById("modal-panel").innerHTML = "";
+    }
+
+    function closeModalIfBackdrop(event) {
+      if (event.target.id === "modal") {
+        closeModal();
+      }
+    }
+
+    document.body.addEventListener("htmx:afterSwap", (event) => {
+      if (event.detail.target && event.detail.target.id === "modal-panel") {
+        openModal();
+      }
+    });
+  </script>
+</body>
+</html>
